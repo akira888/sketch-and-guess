@@ -266,6 +266,9 @@ GEM
       rubocop-rails (>= 2.30)
     ruby-progressbar (1.13.0)
     securerandom (0.4.1)
+    seed-do (3.0.3)
+      activerecord (>= 7.1)
+      activesupport (>= 7.1)
     solid_cable (3.0.12)
       actioncable (>= 7.2)
       activejob (>= 7.2)
@@ -357,6 +360,7 @@ DEPENDENCIES
   puma (>= 5.0)
   rails (~> 8.0.3)
   rubocop-rails-omakase
+  seed-do
   solid_cable
   solid_cache
   solid_queue
