@@ -1,0 +1,18 @@
+<%= form_with model: cache_room, url: rooms_path do |form| %>
+  <ul class="room-form">
+    <li>
+      <%= form.label :member_limit, '遊ぶ人数を決める(4~8人)' %>
+      <%= form.range_field :member_limit, in: 4..8, oninput: "this.form.member_limit_result.value = this.value" %>
+      <output name="member_limit_result" for="cache_room_member_limit"><%= cache_room.member_limit %></output>
+    </li>
+    <li>
+      <%= form.label :total_round, 'ゲーム回数を決める（1~3回）' %>
+      <%= form.range_field :total_round, in: 1..3, oninput: "this.form.total_round_result.value = this.value" %>
+      <output name="total_round_result" for="cache_room_total_round"><%= cache_room.total_round %></output>
+    </li>
+    <li>
+      <%= form.submit '決まった！' %>
+      <%= form.hidden_field :room_id %>
+    </li>
+  </ul>
+<% end %>
