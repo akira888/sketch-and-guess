@@ -1,5 +1,4 @@
 class Cache::Room < CacheModel
-
   # 人数制限
   attribute :member_limit, :integer
   # ゲームラウンド数
