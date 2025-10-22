@@ -7,6 +7,8 @@ class RoomsController < ApplicationController
 
   def create
     @cache_room = Cache::Room.new(room_params)
+    @cache_room.entering_count = 0
+
     if @cache_room.save
       session[:room_id] = @cache_room.id
       flash[:notice] = "ゲームルームを作成しました"
