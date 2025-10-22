@@ -1,1 +1,8 @@
-ユーザー登録画面〜
+<h2>ゲーム内で利用するユーザー名を登録して下さい。</h2>
+<%= form_with model: @cache_user, url: users_path do |form| %>
+  <%= form.label :name, 'ユーザー名' %>
+  <%= form.text_field :name %>
+  <%= form.hidden_field :room_id %>
+
+  <%= form.submit 'この名前にする！' %>
+<% end %>

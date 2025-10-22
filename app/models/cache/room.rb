@@ -1,27 +1,14 @@
-# frozen_string_literal: true
-
-# Cache::Room stored in SolidCache
-#
-# Example usage:
-#   room = Cache::Room.new(
-#     room_id: nil,
-#     member_limit: nil,
-#     total_round: nil,
-#   )
-#   room.save
-#
-#   # Later...
-#   room = Cache::Room.find("some_id")
-#   room.destroy
 class Cache::Room < CacheModel
-  # Attributes
-  attribute :room_id, :string
+  # 人数制限
   attribute :member_limit, :integer
+  # ゲームラウンド数
   attribute :total_round, :integer
+  # 登録人数
+  attribute :entering_count, :integer
 
   # Validations
-  # validates :some_field, presence: true
-  # validate :custom_validation
+  validates :member_limit, presence: true
+  validates :total_round, presence: true
 
   # Configuration
   def self.cache_key_prefix
@@ -32,15 +19,7 @@ class Cache::Room < CacheModel
     1.day
   end
 
-  # Custom methods
-  # def custom_method
-  #   # Your logic here
-  # end
-
-  private
-
-  # Custom ID generation (optional)
-  # def generate_id
-  #   self.id = SecureRandom.uuid
-  # end
+  def full?
+    member_limit == entering_count
+  end
 end
