@@ -12,7 +12,8 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "rooms#index"
 
-  resources :rooms, only: [:index, :new, :create, :show]
+  resources :rooms, only: [ :index, :new, :create, :show ]
 
-  get "entry/:room_id", to: 'users#new', as: 'user_entry'
+  get "entry/:room_id", to: "users#new", as: "user_entry"
+  resources :users, only: [ :create, :show ]
 end

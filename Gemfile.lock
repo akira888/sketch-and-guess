@@ -366,6 +366,7 @@ DEPENDENCIES
   puma (>= 5.0)
   rails (~> 8.0.3)
   rqrcode
+  rubocop
   rubocop-rails-omakase
   seed-do
   solid_cable

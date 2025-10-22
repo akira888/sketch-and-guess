@@ -38,7 +38,7 @@ class CacheModelGenerator < Rails::Generators::NamedBase
     if class_path.empty?
       file_name
     else
-      [class_path, file_name].join("_")
+      [ class_path, file_name ].join("_")
     end
   end
 

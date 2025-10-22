@@ -23,10 +23,10 @@ class RoomsController < ApplicationController
 
   private
   def room_params
-    params.require('cache_room').permit(:room_id, :member_limit, :total_round)
+    params.require("cache_room").permit(:room_id, :member_limit, :total_round)
   end
 
   def initial_params
-    {member_limit: 4, total_round: 1}
+    { member_limit: 4, total_round: 1 }
   end
 end
