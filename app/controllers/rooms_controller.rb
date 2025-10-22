@@ -8,6 +8,7 @@ class RoomsController < ApplicationController
   def create
     @cache_room = Cache::Room.new(room_params)
     if @cache_room.save
+      session[:room_id] = @cache_room.id
       flash[:notice] = "ゲームルームを作成しました"
       redirect_to room_path @cache_room
     else
@@ -17,6 +18,7 @@ class RoomsController < ApplicationController
 
   def show
     @cache_room = Cache::Room.find(params[:id])
+    # ここでゲーム進行する？
   end
 
   private

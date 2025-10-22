@@ -1,1 +1,7 @@
-参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。
+<h2 class="message">参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。</h2>
+<dl>
+  <dd>ユーザー登録URL</dd>
+  <dd><%= link_to user_entry_url(@cache_room.id), user_entry_url(@cache_room.id) %></dd>
+  <dt>QR code</dt>
+  <dd><%= image_tag qrcode_tag user_entry_url(@cache_room.id) %></dd>
+</dl>
