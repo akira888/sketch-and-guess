@@ -11,7 +11,6 @@ class RoomsController < ApplicationController
     session[:room_id] = nil
 
     @cache_room = Cache::Room.new(room_params)
-    @cache_room.entering_count = 0
 
     if @cache_room.save
       session[:room_id] = @cache_room.id
@@ -153,6 +152,43 @@ class RoomsController < ApplicationController
     @is_room_creator = first_member && first_member["user_id"] == @current_user.id
   end
 
+  def submit_free_prompt
+    @cache_room = Cache::Room.find(params[:id])
+    @game = Cache::Game.find_by_room(@cache_room.id)
+    @current_user = Cache::User.find(session[:user_id])
+
+    unless @game&.prompt_selection?
+      render json: { error: "お題選択フェーズではありません" }, status: :bad_request and return
+    end
+
+    unless @game.dice_result.present?
+      render json: { error: "まだダイスが振られていません" }, status: :bad_request and return
+    end
+
+    prompt_text = params[:prompt_text]&.strip
+    if prompt_text.blank?
+      render json: { error: "お題を入力してください" }, status: :bad_request and return
+    end
+
+    begin
+      # カスタムプロンプトでゲームを開始
+      game_manager = GameManager.new(@cache_room)
+      game_manager.finalize_game_start!(@game.dice_result, custom_prompt_text: prompt_text)
+
+      # 全員にゲーム開始をブロードキャスト
+      broadcast_game_start_with_prompt(@cache_room, prompt_text)
+
+      render json: {
+        success: true,
+        message: "お題が設定されました",
+        prompt_text: prompt_text
+      }
+    rescue => e
+      Rails.logger.error "Failed to submit free prompt: #{e.message}"
+      render json: { error: e.message }, status: :internal_server_error
+    end
+  end
+
   def roll_dice
     @cache_room = Cache::Room.find(params[:id])
     @game = Cache::Game.find_by_room(@cache_room.id)
@@ -172,18 +208,47 @@ class RoomsController < ApplicationController
       dice_result = rand(1..6)
       Rails.logger.info "Dice rolled: #{dice_result} for room #{@cache_room.id}"
 
-      # ゲームを開始
-      game_manager = GameManager.new(@cache_room)
-      game_manager.finalize_game_start!(dice_result)
+      # ダイス結果を保存（ゲーム開始前に）
+      @game.dice_result = dice_result
+      @game.save!
 
-      # 全員にダイス結果とゲーム開始をブロードキャスト
-      broadcast_dice_result(@cache_room, dice_result)
+      # 選択されたお題を確認（最初のユーザーのcard_numで代表として確認）
+      first_member = @cache_room.member_order_array.first
+      first_user = Cache::User.find(first_member["user_id"])
+      selected_prompt = Prompt.find_by_card_and_order(first_user.assigned_card_num, dice_result)
 
-      render json: {
-        success: true,
-        dice_result: dice_result,
-        message: "ダイスを振りました"
-      }
+      # FREEお題の場合は入力待ちにする
+      if selected_prompt.free_input?
+        # 全員にダイス結果をブロードキャスト（入力フォーム表示用）
+        broadcast_dice_result(@cache_room, dice_result)
+
+        response_data = {
+          success: true,
+          dice_result: dice_result,
+          needs_free_input: true,
+          message: "お題が選ばれました。内容を入力してください"
+        }
+
+        # FREE:ジャンルの場合はジャンルも返す
+        if selected_prompt.free_with_genre?
+          response_data[:genre] = selected_prompt.genre
+        end
+
+        render json: response_data
+      else
+        # 通常のお題の場合はそのままゲーム開始
+        game_manager = GameManager.new(@cache_room)
+        game_manager.finalize_game_start!(dice_result)
+
+        # 全員にダイス結果とゲーム開始をブロードキャスト
+        broadcast_dice_result(@cache_room, dice_result)
+
+        render json: {
+          success: true,
+          dice_result: dice_result,
+          message: "ダイスを振りました"
+        }
+      end
     rescue => e
       Rails.logger.error "Failed to roll dice: #{e.message}"
       render json: { error: e.message }, status: :internal_server_error
@@ -208,6 +273,22 @@ class RoomsController < ApplicationController
         <script>
           window.diceResult = #{dice_result};
           const event = new CustomEvent('diceRolled', { detail: { result: #{dice_result} } });
+          document.dispatchEvent(event);
+        </script>
+      HTML
+    )
+  end
+
+  def broadcast_game_start_with_prompt(room, prompt_text)
+    # FREEお題が設定されたことをブロードキャスト
+    Turbo::StreamsChannel.broadcast_append_to(
+      "room_#{room.id}_dice",
+      target: "body",
+      html: <<~HTML
+        <script>
+          const event = new CustomEvent('freePromptSubmitted', {
+            detail: { promptText: #{prompt_text.to_json} }
+          });
           document.dispatchEvent(event);
         </script>
       HTML

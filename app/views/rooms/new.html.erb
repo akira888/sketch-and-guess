@@ -1,5 +1,16 @@
 <div class="form-area">
-  <%= render 'form', cache_room: @cache_room %>
+  <%= form_with model: @cache_room, url: rooms_path do |form| %>
+    <ul class="room-form">
+      <li>
+        <%= form.label :member_limit, '何人で遊びますか？(4~8人)' %>
+        <%= form.range_field :member_limit, in: 4..8, oninput: "this.form.member_limit_result.value = this.value" %>
+        <output name="member_limit_result" for="cache_room_member_limit"><%= @cache_room.member_limit %></output>人
+      </li>
+      <li>
+        <%= form.submit '決定！' %>
+      </li>
+    </ul>
+  <% end %>
 </div>
 <div class="footer">
   <%= link_to '戻る', root_path %>
