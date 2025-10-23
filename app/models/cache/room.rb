@@ -22,6 +22,7 @@ class Cache::Room < CacheModel
   end
 
   # Parse member_order JSON
+  # Returns array of hashes: [{ "user_id" => "xxx", "user_name" => "yyy" }, ...]
   def member_order_array
     return [] if member_order.blank?
     JSON.parse(member_order)
@@ -34,10 +35,23 @@ class Cache::Room < CacheModel
     self.member_order = array.to_json
   end
 
+  # Get array of user names only (for backward compatibility)
+  def member_names
+    member_order_array.map { |m| m["user_name"] }
+  end
+
+  # Get array of user IDs only
+  def member_ids
+    member_order_array.map { |m| m["user_id"] }
+  end
+
   # Add member to the order
-  def add_member(user_name)
+  def add_member(user_id, user_name)
     array = member_order_array
-    array << user_name unless array.include?(user_name)
+    # Check if user is already in the list
+    unless array.any? { |m| m["user_id"] == user_id }
+      array << { "user_id" => user_id, "user_name" => user_name }
+    end
     self.member_order_array = array
     self.entering_count = array.length
     save!

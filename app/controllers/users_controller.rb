@@ -9,15 +9,38 @@ class UsersController < ApplicationController
 
   def create
     @cache_room = Cache::Room.find session[:room_id]
-    render "busy", status: 403 if @cache_room.full?
+
+    if @cache_room.full?
+      render "busy", status: 403
+      return
+    end
 
     @cache_user = Cache::User.new(user_params)
     if @cache_user.save
-      entering_count = @cache_room.entering_count + 1
-      @cache_room.update(entering_count:)
+      # 参加者リストに追加
+      @cache_room.add_member(@cache_user.id, @cache_user.name)
       session[:user_id] = @cache_user.id
-      flash[:notice] = "ユーザー登録が完了しました"
-      redirect_to new_sketch_book_path
+
+      # 定員に達したか確認
+      if @cache_room.full?
+        # ゲーム自動開始
+        begin
+          game_manager = GameManager.new(@cache_room)
+          game = game_manager.start_game!
+
+          flash[:notice] = "ゲームを開始しました！"
+          redirect_to sketch_book_path(@cache_user.current_sketch_book_id || @cache_user.sketch_book_id)
+        rescue => e
+          flash[:alert] = "ゲーム開始に失敗しました: #{e.message}"
+          redirect_to room_path(@cache_room.id)
+        end
+      else
+        # まだ定員に達していない場合は待機画面へ
+        flash[:notice] = "ルームに参加しました（#{@cache_room.entering_count}/#{@cache_room.member_limit}人）"
+        redirect_to room_path(@cache_room.id)
+      end
+    else
+      render :new
     end
   end
 
