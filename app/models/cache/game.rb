@@ -1,22 +1,3 @@
-# frozen_string_literal: true
-
-# Cache::Game stored in SolidCache
-#
-# Example usage:
-#   game = Cache::Game.new(
-#     room_id: nil,
-#     current_turn: nil,
-#     turn_type: nil,
-#     turn_started_at: nil,
-#     current_round: nil,
-#     status: nil,
-#     sketch_book_holders: nil,
-#   )
-#   game.save
-#
-#   # Later...
-#   game = Cache::Game.find("some_id")
-#   game.destroy
 class Cache::Game < CacheModel
   # Attributes
   attribute :room_id, :string
