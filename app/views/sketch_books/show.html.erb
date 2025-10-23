@@ -1,0 +1,505 @@
+<%= turbo_stream_from "game_#{@game.room_id}" %>
+
+<div class="game-screen">
+  <div class="game-header">
+    <h1>Sketch & Guess</h1>
+    <div class="game-info">
+      <p>ターン: <%= @current_turn %></p>
+      <p>ラウンド: <%= @game.current_round %> / <%= @room.total_round %></p>
+    </div>
+  </div>
+
+  <div class="game-content">
+    <% if @latest_page %>
+      <div class="previous-page">
+        <h2>前のページ</h2>
+        <% if @latest_page.sketch? %>
+          <%= image_tag @latest_page.image, alt: "前のプレイヤーの絵", class: "previous-image" %>
+        <% elsif @latest_page.text? || @latest_page.prompt? %>
+          <p class="text-content"><%= @latest_page.content %></p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="current-task">
+      <% if @turn_type == "sketch" %>
+        <h2>絵を描いてください</h2>
+        <div id="timer-display" class="timer">60</div>
+
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, id: "drawing-form" do |f| %>
+          <div class="canvas-wrapper">
+            <div class="canvas-container">
+              <canvas id="drawing-canvas"></canvas>
+            </div>
+
+            <div class="canvas-tools">
+              <button type="button" id="pen-btn" class="tool-btn active" title="ペン">ペン</button>
+              <button type="button" id="eraser-btn" class="tool-btn" title="消しゴム">消しゴム</button>
+              <button type="button" id="clear-btn" class="tool-btn" title="全消去">クリア</button>
+              <div class="color-palette">
+                <div class="color-option active" data-color="#000000" style="background-color: #000000;"></div>
+                <div class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></div>
+              </div>
+            </div>
+          </div>
+
+          <%= f.hidden_field :image_data, id: "canvas-image-data" %>
+          <%= f.submit "完了", class: "submit-btn", id: "submit-drawing" %>
+        <% end %>
+
+      <% elsif @turn_type == "text" %>
+        <h2>絵を見て、何が描かれているか答えてください</h2>
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post do |f| %>
+          <%= f.text_field :content, placeholder: "ここに答えを入力してください", class: "text-input", autofocus: true %>
+          <%= f.submit "回答する", class: "submit-btn" %>
+        <% end %>
+      <% end %>
+
+      <div id="waiting-info" class="waiting-info">
+        <p>他のプレイヤーの進捗を待っています...</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .game-screen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .game-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .game-info {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .previous-page {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 8px;
+  }
+
+  .previous-image {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+  }
+
+  .text-content {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    padding: 40px;
+  }
+
+  .canvas-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .canvas-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  #drawing-canvas {
+    background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: crosshair;
+    touch-action: none;
+  }
+
+  .canvas-tools {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+  }
+
+  .tool-btn {
+    padding: 10px 20px;
+    border: 2px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .tool-btn:hover {
+    background: #f0f0f0;
+  }
+
+  .tool-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+  }
+
+  .color-palette {
+    display: flex;
+    gap: 8px;
+  }
+
+  .color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .color-option:hover {
+    transform: scale(1.1);
+  }
+
+  .color-option.active {
+    border-color: #007bff;
+    transform: scale(1.2);
+  }
+
+  .timer {
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+    margin: 20px 0;
+    color: #333;
+  }
+
+  .timer.warning {
+    color: #ff9800;
+  }
+
+  .timer.danger {
+    color: #f44336;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .text-input {
+    width: 100%;
+    max-width: 600px;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    margin: 20px auto;
+    display: block;
+  }
+
+  .submit-btn {
+    padding: 15px 40px;
+    font-size: 18px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    display: block;
+    margin: 20px auto;
+  }
+
+  .submit-btn:hover {
+    background: #218838;
+  }
+
+  .waiting-info {
+    margin-top: 30px;
+    text-align: center;
+    color: #666;
+  }
+</style>
+
+<script>
+class DrawingApp {
+  constructor() {
+    this.canvas = document.getElementById('drawing-canvas');
+    if (!this.canvas) return;
+
+    this.ctx = this.canvas.getContext('2d');
+    this.isDrawing = false;
+    this.currentTool = 'pen';
+    this.currentColor = '#000000';
+    this.lineWidth = 5;
+    this.eraserWidth = 20;
+
+    this.initCanvas();
+    this.bindEvents();
+    this.setupTools();
+    this.setupColorPalette();
+  }
+
+  initCanvas() {
+    const container = document.querySelector('.canvas-container');
+    const containerRect = container.getBoundingClientRect();
+
+    const maxWidth = Math.min(containerRect.width - 40, 800);
+    const maxHeight = 600;
+
+    this.canvas.width = maxWidth;
+    this.canvas.height = maxHeight;
+
+    // 高DPI対応
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
+
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+
+    this.ctx.scale(dpr, dpr);
+
+    // 描画設定
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.imageSmoothingEnabled = true;
+
+    // 背景を白に設定
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  bindEvents() {
+    // マウスイベント
+    this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+    this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+    this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+    this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+
+    // タッチイベント
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      this.canvas.dispatchEvent(mouseEvent);
+    });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      this.canvas.dispatchEvent(mouseEvent);
+    });
+
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const mouseEvent = new MouseEvent('mouseup', {});
+      this.canvas.dispatchEvent(mouseEvent);
+    });
+  }
+
+  setupTools() {
+    const penBtn = document.getElementById('pen-btn');
+    const eraserBtn = document.getElementById('eraser-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    penBtn?.addEventListener('click', () => this.selectTool('pen'));
+    eraserBtn?.addEventListener('click', () => this.selectTool('eraser'));
+    clearBtn?.addEventListener('click', () => this.clearCanvas());
+  }
+
+  setupColorPalette() {
+    const colorOptions = document.querySelectorAll('.color-option');
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const color = option.dataset.color;
+        this.selectColor(color);
+
+        colorOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+      });
+    });
+  }
+
+  selectTool(tool) {
+    this.currentTool = tool;
+
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`${tool}-btn`)?.classList.add('active');
+
+    if (tool === 'pen') {
+      this.canvas.style.cursor = 'crosshair';
+    } else if (tool === 'eraser') {
+      this.canvas.style.cursor = 'grab';
+    }
+  }
+
+  selectColor(color) {
+    this.currentColor = color;
+    if (this.currentTool === 'eraser') {
+      this.selectTool('pen');
+    }
+  }
+
+  getMousePos(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
+
+    return {
+      x: (e.clientX - rect.left) * scaleX / (window.devicePixelRatio || 1),
+      y: (e.clientY - rect.top) * scaleY / (window.devicePixelRatio || 1)
+    };
+  }
+
+  startDrawing(e) {
+    this.isDrawing = true;
+    const pos = this.getMousePos(e);
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(pos.x, pos.y);
+
+    if (this.currentTool === 'pen') {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.currentColor;
+      this.ctx.lineWidth = this.lineWidth;
+    } else if (this.currentTool === 'eraser') {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.lineWidth = this.eraserWidth;
+    }
+  }
+
+  draw(e) {
+    if (!this.isDrawing) return;
+
+    const pos = this.getMousePos(e);
+    this.ctx.lineTo(pos.x, pos.y);
+    this.ctx.stroke();
+  }
+
+  stopDrawing() {
+    if (this.isDrawing) {
+      this.isDrawing = false;
+      this.ctx.beginPath();
+    }
+  }
+
+  clearCanvas() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  getImageData() {
+    return this.canvas.toDataURL('image/png');
+  }
+}
+
+// 初期化（Turbo対応）
+function initializeDrawingApp() {
+  const app = new DrawingApp();
+
+  // タイマー機能
+  const timerDisplay = document.getElementById('timer-display');
+  let timerInterval = null;
+
+  if (timerDisplay) {
+    let timeLeft = 60;
+    timerInterval = setInterval(() => {
+      timeLeft--;
+      timerDisplay.textContent = timeLeft;
+
+      if (timeLeft <= 10) {
+        timerDisplay.classList.add('danger');
+      } else if (timeLeft <= 20) {
+        timerDisplay.classList.add('warning');
+      }
+
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        // カウント0で自動送信
+        const drawingForm = document.getElementById('drawing-form');
+        if (drawingForm) {
+          console.log('タイマー終了：自動送信します');
+          drawingForm.requestSubmit();
+        }
+      }
+    }, 1000);
+  }
+
+  // フォーム送信時に画像データを設定
+  const form = document.getElementById('drawing-form');
+  let isSubmitting = false;
+
+  form?.addEventListener('submit', (e) => {
+    // 二重送信防止
+    if (isSubmitting) {
+      e.preventDefault();
+      return;
+    }
+
+    isSubmitting = true;
+
+    // タイマーを停止
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    // Canvas画像データを取得してhidden fieldに設定
+    const imageData = app.getImageData();
+    document.getElementById('canvas-image-data').value = imageData;
+
+    console.log('フォーム送信：画像データを設定しました');
+
+    // Turboでフォームを送信（preventDefaultしない）
+  });
+}
+
+// DOMContentLoadedとturbo:loadの両方で初期化
+document.addEventListener('DOMContentLoaded', initializeDrawingApp);
+document.addEventListener('turbo:load', initializeDrawingApp);
+
+// ゲーム状態の定期チェック（ブロードキャストのフォールバック）
+(function() {
+  const currentTurn = <%= @current_turn %>;
+  const currentUserId = '<%= @current_user.id %>';
+  const roomId = '<%= @game.room_id %>';
+
+  // 5秒ごとにゲーム状態をチェック
+  setInterval(() => {
+    fetch('/rooms/' + roomId + '/game_next_turn')
+      .then(response => response.json())
+      .then(data => {
+        // 自分のcurrent_sketch_book_idが変わっていたらリロード
+        const currentPath = window.location.pathname;
+        const expectedPath = data.sketch_book_url;
+
+        if (currentPath !== expectedPath) {
+          console.log('ゲーム状態が変更されました。ページをリロードします。');
+          window.location.href = expectedPath;
+        }
+      })
+      .catch(err => console.error('Game state check failed:', err));
+  }, 5000); // 5秒ごとにチェック
+})();
+</script>

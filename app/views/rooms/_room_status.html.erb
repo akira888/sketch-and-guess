@@ -1,0 +1,36 @@
+<% game_started ||= false %>
+
+<% if cache_room.full? || game_started %>
+  <div class="game-starting">
+    <h2>全員揃いました！</h2>
+    <p>ゲームを開始しています...</p>
+    <p>自動的にゲーム画面に移動します</p>
+  </div>
+
+  <% if game_started %>
+    <script>
+      // ゲーム開始時、各ユーザーを自分のスケッチブックにリダイレクト
+      (function() {
+        // 現在のユーザーのスケッチブックIDを取得してリダイレクト
+        fetch('<%= game_redirect_room_path(cache_room.id) %>')
+          .then(response => response.json())
+          .then(data => {
+            if (data.sketch_book_id) {
+              Turbo.visit(data.sketch_book_url);
+            }
+          });
+      })();
+    </script>
+  <% end %>
+<% else %>
+  <div class="invitation">
+    <h2>参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。</h2>
+    <dl>
+      <dt>ユーザー登録URL</dt>
+      <dd><%= link_to user_entry_url(cache_room.id), user_entry_url(cache_room.id), target: "_blank" %></dd>
+      <dt>QR code</dt>
+      <dd><%= image_tag qrcode_tag user_entry_url(cache_room.id) %></dd>
+    </dl>
+    <p class="waiting-message">あと <%= cache_room.member_limit - cache_room.entering_count %> 人待っています...</p>
+  </div>
+<% end %>

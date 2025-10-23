@@ -12,10 +12,16 @@ Rails.application.routes.draw do
   # Defines the root path route ("/")
   root "rooms#index"
 
-  resources :rooms, only: [ :index, :new, :create, :show ]
+  resources :rooms, only: [ :index, :new, :create, :show ] do
+    get :results, on: :member
+    get :game_redirect, on: :member
+    get :game_next_turn, on: :member
+  end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
   resources :users, only: [ :create, :show ]
 
-  resources :sketch_books, only: [ :new ]
+  resources :sketch_books, only: [ :show ] do
+    post :add_page, on: :member
+  end
 end
