@@ -10,7 +10,7 @@ class CreatePages < ActiveRecord::Migration[8.1]
       t.timestamps
     end
 
-    add_index :pages, [:sketch_book_id, :page_number], unique: true
+    add_index :pages, [ :sketch_book_id, :page_number ], unique: true
     add_index :pages, :page_type
   end
 end

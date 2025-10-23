@@ -11,7 +11,7 @@ class CreateSketchBooks < ActiveRecord::Migration[8.1]
     end
 
     add_index :sketch_books, :room_id
-    add_index :sketch_books, [:room_id, :round]
+    add_index :sketch_books, [ :room_id, :round ]
     add_index :sketch_books, :completed
   end
 end

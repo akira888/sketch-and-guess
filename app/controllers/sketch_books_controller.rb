@@ -68,7 +68,7 @@ class SketchBooksController < ApplicationController
     # Base64データをデコードしてファイルに変換
     begin
       # "data:image/png;base64," の部分を削除
-      image_data = image_data.sub(/^data:image\/\w+;base64,/, '')
+      image_data = image_data.sub(/^data:image\/\w+;base64,/, "")
       decoded_image = Base64.decode64(image_data)
 
       page_number = @sketch_book.pages.count + 1
