@@ -3,6 +3,11 @@ class UsersController < ApplicationController
     @cache_room = Cache::Room.find params[:room_id]
     render "not_found", status: 404 unless @cache_room
 
+    # 別のルームから来た場合は、古いユーザー情報をクリア
+    if session[:room_id] && session[:room_id] != @cache_room.id
+      session[:user_id] = nil
+    end
+
     session[:room_id] = @cache_room.id
     @cache_user = Cache::User.new(room_id: @cache_room.id)
   end
@@ -26,21 +31,21 @@ class UsersController < ApplicationController
 
       # 定員に達したか確認
       if @cache_room.full?
-        # ゲーム自動開始
+        # お題選択フェーズへ
         begin
           game_manager = GameManager.new(@cache_room)
-          game = game_manager.start_game!
+          game = game_manager.prepare_prompt_selection!
 
-          # ユーザー情報を再読み込み（sketch_book_idとcurrent_sketch_book_idが設定されている）
+          # ユーザー情報を再読み込み（assigned_card_numが設定されている）
           @cache_user = Cache::User.find(@cache_user.id)
 
-          # 全員をゲーム画面にリダイレクト
-          broadcast_game_start(@cache_room)
+          # 全員をお題選択画面にリダイレクト
+          broadcast_prompt_selection_start(@cache_room)
 
-          flash[:notice] = "ゲームを開始しました！"
-          redirect_to sketch_book_path(@cache_user.current_sketch_book_id || @cache_user.sketch_book_id)
+          flash[:notice] = "全員揃いました！お題を選びます"
+          redirect_to prompt_selection_room_path(@cache_room.id)
         rescue => e
-          flash[:alert] = "ゲーム開始に失敗しました: #{e.message}"
+          flash[:alert] = "お題選択の準備に失敗しました: #{e.message}"
           redirect_to room_path(@cache_room.id)
         end
       else
@@ -99,6 +104,20 @@ class UsersController < ApplicationController
       target: "room-status",
       partial: "rooms/room_status",
       locals: { cache_room: room, game_started: true }
+    )
+  end
+
+  def broadcast_prompt_selection_start(room)
+    # 全員をお題選択画面にリダイレクト
+    Turbo::StreamsChannel.broadcast_append_to(
+      "room_#{room.id}",
+      target: "body",
+      html: <<~HTML
+        <script>
+          console.log('お題選択フェーズが始まりました');
+          window.location.href = '/rooms/#{room.id}/prompt_selection';
+        </script>
+      HTML
     )
   end
 end

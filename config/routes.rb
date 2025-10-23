@@ -12,6 +12,8 @@ Rails.application.routes.draw do
     get :results, on: :member
     get :game_redirect, on: :member
     get :game_next_turn, on: :member
+    get :prompt_selection, on: :member
+    post :roll_dice, on: :member
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"

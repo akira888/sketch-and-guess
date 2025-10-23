@@ -251,3 +251,35 @@
     }
   }
 </style>
+
+<script>
+// ゲーム状態の定期チェック
+(function() {
+  const roomId = '<%= @cache_room.id %>';
+
+  // 2秒ごとにゲーム状態をチェック
+  const checkInterval = setInterval(() => {
+    fetch(`/rooms/${roomId}/game_redirect`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // お題選択フェーズに移行したかチェック
+      if (data.game_status === 'prompt_selection') {
+        console.log('お題選択フェーズに移行しました');
+        clearInterval(checkInterval);
+        window.location.href = `/rooms/${roomId}/prompt_selection`;
+      }
+      // ゲームが開始されたかチェック
+      else if (data.sketch_book_url) {
+        console.log('ゲームが開始されました');
+        clearInterval(checkInterval);
+        window.location.href = data.sketch_book_url;
+      }
+    })
+    .catch(err => console.error('Status check failed:', err));
+  }, 2000);
+})();
+</script>

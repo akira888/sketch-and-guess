@@ -1,0 +1,447 @@
+<%= turbo_stream_from "room_#{@cache_room.id}_dice" %>
+
+<div class="prompt-selection-screen">
+  <h1>お題選択</h1>
+
+  <div class="game-info">
+    <p>ルームID: <%= @cache_room.id %></p>
+    <p>参加人数: <%= @cache_room.entering_count %>人</p>
+  </div>
+
+  <div class="prompts-container">
+    <h2>あなたのお題候補</h2>
+    <div class="prompts-grid">
+      <% @prompts.each do |prompt| %>
+        <div class="prompt-card" data-order="<%= prompt.order %>">
+          <div class="prompt-number"><%= prompt.order %></div>
+          <div class="prompt-word"><%= prompt.word %></div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="dice-container">
+    <div id="dice-display" class="dice-display">
+      <div class="dice-face">?</div>
+    </div>
+
+    <% if @is_room_creator %>
+      <button id="roll-dice-btn" class="roll-dice-btn">
+        ダイスを振る
+      </button>
+    <% else %>
+      <p class="waiting-message">ルーム作成者がダイスを振るのを待っています...</p>
+    <% end %>
+  </div>
+
+  <div id="result-display" class="result-display" style="display: none;">
+    <h2>ダイスの結果</h2>
+    <div class="result-number"></div>
+    <div class="result-message"></div>
+  </div>
+</div>
+
+<style>
+  .prompt-selection-screen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .prompt-selection-screen h1 {
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .game-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+  }
+
+  .game-info p {
+    margin: 5px 0;
+    color: #666;
+  }
+
+  .prompts-container {
+    margin-bottom: 40px;
+  }
+
+  .prompts-container h2 {
+    color: #495057;
+    margin-bottom: 20px;
+  }
+
+  .prompts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 0 auto;
+    max-width: 900px;
+  }
+
+  .prompt-card {
+    background: white;
+    border: 3px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .prompt-card.selected {
+    border-color: #28a745;
+    background: #d4edda;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  .prompt-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+
+  .prompt-word {
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .dice-container {
+    margin: 40px 0;
+  }
+
+  .dice-display {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 30px;
+    perspective: 1000px;
+  }
+
+  .dice-face {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, #ffffff, #e6e6e6);
+    border: 3px solid #333;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease;
+  }
+
+  .dice-face.rolling {
+    animation: diceRoll 0.5s ease-in-out infinite;
+  }
+
+  @keyframes diceRoll {
+    0%, 100% { transform: rotateX(0deg) rotateY(0deg); }
+    25% { transform: rotateX(180deg) rotateY(0deg); }
+    50% { transform: rotateX(180deg) rotateY(180deg); }
+    75% { transform: rotateX(0deg) rotateY(180deg); }
+  }
+
+  .roll-dice-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #28a745, #20873a);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .roll-dice-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .roll-dice-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .roll-dice-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .waiting-message {
+    font-size: 18px;
+    color: #ff9800;
+    font-weight: bold;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .result-display {
+    margin-top: 40px;
+    padding: 30px;
+    background: #d4edda;
+    border: 3px solid #28a745;
+    border-radius: 12px;
+  }
+
+  .result-display h2 {
+    color: #155724;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-size: 72px;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 20px;
+  }
+
+  .result-message {
+    font-size: 24px;
+    color: #155724;
+    font-weight: bold;
+    line-height: 1.6;
+  }
+
+  .highlight-prompt {
+    font-size: 32px;
+    color: #28a745;
+    background: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .countdown {
+    margin-top: 20px;
+    font-size: 20px;
+    color: #666;
+    font-weight: normal;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .prompt-selection-screen {
+      padding: 15px;
+    }
+
+    .prompts-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .prompt-card {
+      padding: 15px;
+    }
+
+    .prompt-number {
+      font-size: 20px;
+    }
+
+    .prompt-word {
+      font-size: 16px;
+    }
+
+    .dice-display {
+      width: 100px;
+      height: 100px;
+    }
+
+    .dice-face {
+      font-size: 50px;
+    }
+
+    .roll-dice-btn {
+      padding: 12px 30px;
+      font-size: 18px;
+    }
+
+    .result-number {
+      font-size: 60px;
+    }
+
+    .result-message {
+      font-size: 20px;
+    }
+  }
+</style>
+
+<script>
+(function() {
+  const roomId = '<%= @cache_room.id %>';
+  const isRoomCreator = <%= @is_room_creator %>;
+  const rollDiceBtn = document.getElementById('roll-dice-btn');
+  const diceFace = document.querySelector('.dice-face');
+  const resultDisplay = document.getElementById('result-display');
+
+  let isRolling = false;
+
+  // ダイスボタンクリックイベント
+  if (rollDiceBtn) {
+    rollDiceBtn.addEventListener('click', () => {
+      if (isRolling) return;
+
+      isRolling = true;
+      rollDiceBtn.disabled = true;
+      rollDiceBtn.textContent = 'ダイスを振っています...';
+
+      // ダイス回転アニメーション開始
+      diceFace.classList.add('rolling');
+
+      // ランダムな数字を高速で表示
+      let count = 0;
+      const interval = setInterval(() => {
+        diceFace.textContent = Math.floor(Math.random() * 6) + 1;
+        count++;
+        if (count > 20) {
+          clearInterval(interval);
+        }
+      }, 50);
+
+      // サーバーにダイス振るリクエスト
+      fetch(`/rooms/${roomId}/roll_dice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('Dice rolled:', data.dice_result);
+          // レスポンスから直接結果を処理
+          showDiceResult(data.dice_result);
+        } else {
+          alert(data.error || 'エラーが発生しました');
+          resetDiceButton();
+        }
+      })
+      .catch(error => {
+        console.error('Error rolling dice:', error);
+        alert('ダイスを振るのに失敗しました');
+        resetDiceButton();
+      });
+    });
+  }
+
+  // ダイス結果を表示する関数
+  function showDiceResult(result) {
+    console.log('Showing dice result:', result);
+
+    // ポーリングを停止（結果表示を優先）
+    if (window.promptSelectionPolling) {
+      clearInterval(window.promptSelectionPolling);
+      console.log('Polling stopped to show dice result');
+    }
+
+    setTimeout(() => {
+      // アニメーション停止
+      diceFace.classList.remove('rolling');
+      diceFace.textContent = result;
+
+      // 該当するお題をハイライト
+      const selectedCard = document.querySelector(`.prompt-card[data-order="${result}"]`);
+      if (selectedCard) {
+        selectedCard.classList.add('selected');
+
+        // 結果表示
+        setTimeout(() => {
+          const resultNumber = resultDisplay.querySelector('.result-number');
+          const resultMessage = resultDisplay.querySelector('.result-message');
+          const selectedWord = selectedCard.querySelector('.prompt-word').textContent;
+
+          resultNumber.textContent = result;
+          resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${selectedWord}</span><br>に決まりました！`;
+
+          resultDisplay.style.display = 'block';
+
+          // 結果を表示してから、さらに待機時間を追加
+          let countdown = 5;
+          const countdownEl = document.createElement('div');
+          countdownEl.className = 'countdown';
+          countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+          resultDisplay.appendChild(countdownEl);
+
+          const countdownInterval = setInterval(() => {
+            countdown--;
+            if (countdown > 0) {
+              countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+            } else {
+              clearInterval(countdownInterval);
+              countdownEl.textContent = 'ゲームを開始します！';
+              setTimeout(() => {
+                window.location.href = `/rooms/${roomId}`;
+              }, 500);
+            }
+          }, 1000);
+        }, 500);
+      }
+    }, 1500); // 1.5秒間アニメーション
+  }
+
+  // ブロードキャスト経由でのダイス結果も処理（他のプレイヤー用）
+  document.addEventListener('diceRolled', (event) => {
+    const result = event.detail.result;
+    console.log('Dice result received via broadcast:', result);
+    showDiceResult(result);
+  });
+
+  function resetDiceButton() {
+    diceFace.classList.remove('rolling');
+    diceFace.textContent = '?';
+    if (rollDiceBtn) {
+      rollDiceBtn.disabled = false;
+      rollDiceBtn.textContent = 'ダイスを振る';
+    }
+    isRolling = false;
+  }
+
+  // ポーリング：ダイスが振られたかチェック（ブロードキャストのバックアップ）
+  // window.に保存して、showDiceResult から停止できるようにする
+  let diceResultShown = false; // ダイス結果を表示したかフラグ
+
+  window.promptSelectionPolling = setInterval(() => {
+    fetch(`/rooms/${roomId}/game_redirect`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // ダイスが振られて結果がある場合
+      if (data.dice_result && !diceResultShown) {
+        console.log('ダイス結果を検出（ポーリング）:', data.dice_result);
+        diceResultShown = true;
+        showDiceResult(data.dice_result);
+        // showDiceResult内で自動的にリダイレクトされる
+        return;
+      }
+
+      // ゲームが開始されていて、既に結果を表示済みの場合は即座にリダイレクト
+      if (data.game_status === 'in_progress' && data.sketch_book_url && diceResultShown) {
+        console.log('ゲームが開始されました（ポーリング検出）');
+        clearInterval(window.promptSelectionPolling);
+        window.location.href = data.sketch_book_url;
+      }
+    })
+    .catch(err => console.error('Polling failed:', err));
+  }, 2000); // 2秒ごと
+})();
+</script>
