@@ -43,6 +43,34 @@ class RoomsController < ApplicationController
     end
   end
 
+  def game_redirect
+    user_id = session[:user_id]
+    user = Cache::User.find(user_id)
+
+    if user&.current_sketch_book_id
+      render json: {
+        sketch_book_id: user.current_sketch_book_id,
+        sketch_book_url: sketch_book_path(user.current_sketch_book_id)
+      }
+    else
+      render json: { error: "No sketch book found" }, status: :not_found
+    end
+  end
+
+  def game_next_turn
+    user_id = session[:user_id]
+    user = Cache::User.find(user_id)
+
+    if user&.current_sketch_book_id
+      render json: {
+        sketch_book_id: user.current_sketch_book_id,
+        sketch_book_url: sketch_book_path(user.current_sketch_book_id)
+      }
+    else
+      render json: { error: "No sketch book found" }, status: :not_found
+    end
+  end
+
   private
   def room_params
     params.require("cache_room").permit(:room_id, :member_limit, :total_round)

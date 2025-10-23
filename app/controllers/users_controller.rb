@@ -21,6 +21,9 @@ class UsersController < ApplicationController
       @cache_room.add_member(@cache_user.id, @cache_user.name)
       session[:user_id] = @cache_user.id
 
+      # Turbo Streamで待機中の他のユーザーに通知
+      broadcast_room_update(@cache_room)
+
       # 定員に達したか確認
       if @cache_room.full?
         # ゲーム自動開始
@@ -30,6 +33,9 @@ class UsersController < ApplicationController
 
           # ユーザー情報を再読み込み（sketch_book_idとcurrent_sketch_book_idが設定されている）
           @cache_user = Cache::User.find(@cache_user.id)
+
+          # 全員をゲーム画面にリダイレクト
+          broadcast_game_start(@cache_room)
 
           flash[:notice] = "ゲームを開始しました！"
           redirect_to sketch_book_path(@cache_user.current_sketch_book_id || @cache_user.sketch_book_id)
@@ -58,5 +64,41 @@ class UsersController < ApplicationController
 
   def user_params
     params.require("cache_user").permit(:name, :room_id)
+  end
+
+  def broadcast_room_update(room)
+    # 参加者数を更新
+    Turbo::StreamsChannel.broadcast_update_to(
+      "room_#{room.id}",
+      target: "participant-count",
+      html: "参加人数: <strong>#{room.entering_count} / #{room.member_limit}</strong>"
+    )
+
+    # 参加者一覧を更新
+    Turbo::StreamsChannel.broadcast_update_to(
+      "room_#{room.id}",
+      target: "participants",
+      partial: "rooms/participants",
+      locals: { cache_room: room }
+    )
+
+    # ルームステータスを更新（待機メッセージ）
+    Turbo::StreamsChannel.broadcast_update_to(
+      "room_#{room.id}",
+      target: "room-status",
+      partial: "rooms/room_status",
+      locals: { cache_room: room }
+    )
+  end
+
+  def broadcast_game_start(room)
+    # ルームステータスを更新して、全員に「ゲーム開始」を通知
+    # room_statusパーシャルで自動リダイレクトを処理
+    Turbo::StreamsChannel.broadcast_update_to(
+      "room_#{room.id}",
+      target: "room-status",
+      partial: "rooms/room_status",
+      locals: { cache_room: room, game_started: true }
+    )
   end
 end

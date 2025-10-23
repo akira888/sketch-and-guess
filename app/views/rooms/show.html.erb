@@ -1,14 +1,16 @@
+<%= turbo_stream_from "room_#{@cache_room.id}" %>
+
 <div class="waiting-room">
   <h1>ゲームルーム待機画面</h1>
 
   <div class="room-info">
     <h2>ルーム情報</h2>
     <p>ルームID: <%= @cache_room.id %></p>
-    <p>参加人数: <strong><%= @cache_room.entering_count %> / <%= @cache_room.member_limit %></strong></p>
+    <p id="participant-count">参加人数: <strong><%= @cache_room.entering_count %> / <%= @cache_room.member_limit %></strong></p>
     <p>ラウンド数: <%= @cache_room.total_round %></p>
   </div>
 
-  <div class="participants">
+  <div id="participants" class="participants">
     <h2>参加者一覧</h2>
     <ul>
       <% @cache_room.member_order_array.each do |member| %>
@@ -17,22 +19,24 @@
     </ul>
   </div>
 
-  <% if @cache_room.full? %>
-    <div class="game-starting">
-      <h2>全員揃いました！</h2>
-      <p>ゲームを開始しています...</p>
-      <p>自動的にゲーム画面に移動します</p>
-    </div>
-  <% else %>
-    <div class="invitation">
-      <h2>参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。</h2>
-      <dl>
-        <dt>ユーザー登録URL</dt>
-        <dd><%= link_to user_entry_url(@cache_room.id), user_entry_url(@cache_room.id), target: "_blank" %></dd>
-        <dt>QR code</dt>
-        <dd><%= image_tag qrcode_tag user_entry_url(@cache_room.id) %></dd>
-      </dl>
-      <p class="waiting-message">あと <%= @cache_room.member_limit - @cache_room.entering_count %> 人待っています...</p>
-    </div>
-  <% end %>
+  <div id="room-status">
+    <% if @cache_room.full? %>
+      <div class="game-starting">
+        <h2>全員揃いました！</h2>
+        <p>ゲームを開始しています...</p>
+        <p>自動的にゲーム画面に移動します</p>
+      </div>
+    <% else %>
+      <div class="invitation">
+        <h2>参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。</h2>
+        <dl>
+          <dt>ユーザー登録URL</dt>
+          <dd><%= link_to user_entry_url(@cache_room.id), user_entry_url(@cache_room.id), target: "_blank" %></dd>
+          <dt>QR code</dt>
+          <dd><%= image_tag qrcode_tag user_entry_url(@cache_room.id) %></dd>
+        </dl>
+        <p class="waiting-message">あと <%= @cache_room.member_limit - @cache_room.entering_count %> 人待っています...</p>
+      </div>
+    <% end %>
+  </div>
 </div>

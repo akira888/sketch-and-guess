@@ -57,27 +57,43 @@ class SketchBooksController < ApplicationController
   end
 
   def add_sketch_page
-    # 画像をアップロード
-    image = params[:image]
+    # Base64画像データを取得
+    image_data = params[:image_data]
 
-    unless image
-      flash[:alert] = "画像をアップロードしてください"
+    unless image_data.present?
+      flash[:alert] = "画像データがありません"
       redirect_to sketch_book_path(@sketch_book) and return
     end
 
-    page_number = @sketch_book.pages.count + 1
-    page = Page.new(
-      sketch_book_id: @sketch_book.id,
-      page_number: page_number,
-      page_type: :sketch,
-      user_name: @current_user.name
-    )
-    page.image.attach(image)
+    # Base64データをデコードしてファイルに変換
+    begin
+      # "data:image/png;base64," の部分を削除
+      image_data = image_data.sub(/^data:image\/\w+;base64,/, '')
+      decoded_image = Base64.decode64(image_data)
 
-    if page.save
-      check_and_advance_turn
-    else
-      flash[:alert] = "ページの保存に失敗しました: #{page.errors.full_messages.join(', ')}"
+      page_number = @sketch_book.pages.count + 1
+      page = Page.new(
+        sketch_book_id: @sketch_book.id,
+        page_number: page_number,
+        page_type: "sketch",
+        user_name: @current_user.name
+      )
+
+      # StringIOを使ってActive Storageに添付
+      page.image.attach(
+        io: StringIO.new(decoded_image),
+        filename: "sketch_#{Time.current.to_i}.png",
+        content_type: "image/png"
+      )
+
+      if page.save
+        check_and_advance_turn
+      else
+        flash[:alert] = "ページの保存に失敗しました: #{page.errors.full_messages.join(', ')}"
+        redirect_to sketch_book_path(@sketch_book)
+      end
+    rescue => e
+      flash[:alert] = "画像の処理に失敗しました: #{e.message}"
       redirect_to sketch_book_path(@sketch_book)
     end
   end
@@ -94,7 +110,7 @@ class SketchBooksController < ApplicationController
     page = Page.create(
       sketch_book_id: @sketch_book.id,
       page_number: page_number,
-      page_type: :text,
+      page_type: "text",
       content: content,
       user_name: @current_user.name
     )
@@ -129,11 +145,13 @@ class SketchBooksController < ApplicationController
         # 次のラウンドがあるかチェック
         if @game.current_round < room.total_round
           # 次のラウンド開始準備
+          broadcast_redirect_to_room(room.id)
           flash[:notice] = "ラウンド#{@game.current_round}が終了しました！"
           redirect_to room_path(room.id)
         else
           # ゲーム終了
           @game.finish!
+          broadcast_redirect_to_results(room.id)
           flash[:notice] = "ゲームが終了しました！"
           redirect_to results_room_path(room.id)
         end
@@ -144,14 +162,31 @@ class SketchBooksController < ApplicationController
         # current_sketch_book_idを更新
         update_current_sketch_books(room, sketch_books)
 
+        # 全員を次のスケッチブックにリダイレクト
+        broadcast_next_turn(room)
+
         flash[:notice] = "ページを追加しました"
         # 次に持つスケッチブックにリダイレクト
         redirect_to sketch_book_path(@current_user.reload.current_sketch_book_id)
       end
     else
-      # 待機画面へ
-      flash[:notice] = "ページを追加しました。他のプレイヤーを待っています..."
-      redirect_to sketch_book_path(@sketch_book)
+      # 待機中のプレイヤーに進捗を通知
+      broadcast_waiting_status(room, sketch_books)
+
+      # Turbo Streamで待機状態を表示（リダイレクトせずにストリーム購読を維持）
+      respond_to do |format|
+        format.html { redirect_to sketch_book_path(@sketch_book), notice: "ページを追加しました。他のプレイヤーを待っています..." }
+        format.turbo_stream do
+          completed_count = sketch_books.count { |book| book.pages.count >= @game.current_turn }
+          total_count = sketch_books.count
+
+          render turbo_stream: [
+            turbo_stream.update("current-task", html: "<h2>他のプレイヤーを待っています...</h2>"),
+            turbo_stream.update("waiting-info",
+              html: "<p>ページを追加しました。#{completed_count}/#{total_count}人が完了しました。</p>")
+          ]
+        end
+      end
     end
   end
 
@@ -171,5 +206,71 @@ class SketchBooksController < ApplicationController
         user.save!
       end
     end
+  end
+
+  def broadcast_waiting_status(room, sketch_books)
+    # 完了したプレイヤー数を計算
+    completed_count = sketch_books.count { |book| book.pages.count >= @game.current_turn }
+    total_count = sketch_books.count
+
+    # 待機情報を更新（ゲーム画面内の待機メッセージエリアを想定）
+    Turbo::StreamsChannel.broadcast_update_to(
+      "game_#{room.id}",
+      target: "waiting-info",
+      html: "<p>#{completed_count}/#{total_count}人が完了しました。他のプレイヤーを待っています...</p>"
+    )
+  end
+
+  def broadcast_next_turn(room)
+    # 全ユーザーに次のターン開始を通知
+    # 各ユーザーは自分のcurrent_sketch_book_idにリダイレクト
+    html = <<~HTML
+      <script>
+        (function() {
+          // 自分の次のスケッチブックIDを取得してリダイレクト
+          fetch('#{game_next_turn_room_path(room.id)}')
+            .then(response => response.json())
+            .then(data => {
+              if (data.sketch_book_id) {
+                Turbo.visit(data.sketch_book_url);
+              }
+            });
+        })();
+      </script>
+    HTML
+
+    Turbo::StreamsChannel.broadcast_append_to(
+      "game_#{room.id}",
+      target: "body",
+      html: html
+    )
+  end
+
+  def broadcast_redirect_to_room(room_id)
+    html = <<~HTML
+      <script>
+        Turbo.visit('#{room_path(room_id)}');
+      </script>
+    HTML
+
+    Turbo::StreamsChannel.broadcast_append_to(
+      "game_#{room_id}",
+      target: "body",
+      html: html
+    )
+  end
+
+  def broadcast_redirect_to_results(room_id)
+    html = <<~HTML
+      <script>
+        Turbo.visit('#{results_room_path(room_id)}');
+      </script>
+    HTML
+
+    Turbo::StreamsChannel.broadcast_append_to(
+      "game_#{room_id}",
+      target: "body",
+      html: html
+    )
   end
 end

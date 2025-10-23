@@ -96,8 +96,10 @@ class Cache::Game < CacheModel
 
   def next_turn!
     self.current_turn += 1
-    # Toggle turn type: sketch <-> text
-    self.turn_type = sketch_turn? ? "text" : "sketch"
+    # Turn type based on turn number
+    # Even turns (2, 4, 6, ...): sketch
+    # Odd turns (3, 5, 7, ...): text
+    self.turn_type = current_turn.even? ? "sketch" : "text"
     self.turn_started_at = Time.current
     save!
   end

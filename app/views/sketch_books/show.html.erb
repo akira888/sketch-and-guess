@@ -1,3 +1,5 @@
+<%= turbo_stream_from "game_#{@game.room_id}" %>
+
 <div class="game-screen">
   <div class="game-header">
     <h1>Sketch & Guess</h1>
@@ -12,7 +14,7 @@
       <div class="previous-page">
         <h2>前のページ</h2>
         <% if @latest_page.sketch? %>
-          <%= image_tag @latest_page.image, alt: "前のプレイヤーの絵" %>
+          <%= image_tag @latest_page.image, alt: "前のプレイヤーの絵", class: "previous-image" %>
         <% elsif @latest_page.text? || @latest_page.prompt? %>
           <p class="text-content"><%= @latest_page.content %></p>
         <% end %>
@@ -21,37 +23,41 @@
 
     <div class="current-task">
       <% if @turn_type == "sketch" %>
-        <h2>絵を描いてください（60秒）</h2>
-        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, local: true, multipart: true do |f| %>
-          <div id="canvas-container">
-            <canvas id="drawing-canvas" width="800" height="600"></canvas>
+        <h2>絵を描いてください</h2>
+        <div id="timer-display" class="timer">60</div>
+
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, id: "drawing-form" do |f| %>
+          <div class="canvas-wrapper">
+            <div class="canvas-container">
+              <canvas id="drawing-canvas"></canvas>
+            </div>
+
+            <div class="canvas-tools">
+              <button type="button" id="pen-btn" class="tool-btn active" title="ペン">ペン</button>
+              <button type="button" id="eraser-btn" class="tool-btn" title="消しゴム">消しゴム</button>
+              <button type="button" id="clear-btn" class="tool-btn" title="全消去">クリア</button>
+              <div class="color-palette">
+                <div class="color-option active" data-color="#000000" style="background-color: #000000;"></div>
+                <div class="color-option" data-color="#ff0000" style="background-color: #ff0000;"></div>
+              </div>
+            </div>
           </div>
 
-          <div class="canvas-tools">
-            <button type="button" id="pen-tool" class="tool-btn active">ペン</button>
-            <button type="button" id="eraser-tool" class="tool-btn">消しゴム</button>
-            <input type="color" id="color-picker" value="#000000">
-            <input type="range" id="brush-size" min="1" max="20" value="3">
-            <button type="button" id="clear-canvas" class="tool-btn">クリア</button>
-          </div>
-
-          <div id="timer" class="timer">60</div>
-
-          <%= f.hidden_field :image, id: "canvas-image-data" %>
-          <%= f.submit "完了", class: "submit-btn" %>
+          <%= f.hidden_field :image_data, id: "canvas-image-data" %>
+          <%= f.submit "完了", class: "submit-btn", id: "submit-drawing" %>
         <% end %>
 
       <% elsif @turn_type == "text" %>
         <h2>絵を見て、何が描かれているか答えてください</h2>
-        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, local: true do |f| %>
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post do |f| %>
           <%= f.text_field :content, placeholder: "ここに答えを入力してください", class: "text-input", autofocus: true %>
           <%= f.submit "回答する", class: "submit-btn" %>
         <% end %>
-
-        <div class="waiting-info">
-          <p>他のプレイヤーの進捗を待っています...</p>
-        </div>
       <% end %>
+
+      <div id="waiting-info" class="waiting-info">
+        <p>他のプレイヤーの進捗を待っています...</p>
+      </div>
     </div>
   </div>
 </div>
@@ -81,9 +87,11 @@
     border-radius: 8px;
   }
 
-  .previous-page img {
+  .previous-image {
     max-width: 100%;
     height: auto;
+    display: block;
+    margin: 0 auto;
   }
 
   .text-content {
@@ -93,36 +101,80 @@
     padding: 40px;
   }
 
-  #canvas-container {
-    border: 2px solid #333;
-    display: inline-block;
+  .canvas-wrapper {
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .canvas-container {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 8px;
     margin-bottom: 20px;
   }
 
   #drawing-canvas {
-    display: block;
-    cursor: crosshair;
     background: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    cursor: crosshair;
+    touch-action: none;
   }
 
   .canvas-tools {
     display: flex;
     gap: 10px;
     align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
     margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
   }
 
   .tool-btn {
     padding: 10px 20px;
-    border: 1px solid #ccc;
+    border: 2px solid #ccc;
     background: white;
     cursor: pointer;
     border-radius: 4px;
+    transition: all 0.2s;
+  }
+
+  .tool-btn:hover {
+    background: #f0f0f0;
   }
 
   .tool-btn.active {
     background: #007bff;
     color: white;
+    border-color: #007bff;
+  }
+
+  .color-palette {
+    display: flex;
+    gap: 8px;
+  }
+
+  .color-option {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 3px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .color-option:hover {
+    transform: scale(1.1);
+  }
+
+  .color-option.active {
+    border-color: #007bff;
+    transform: scale(1.2);
   }
 
   .timer {
@@ -130,16 +182,32 @@
     font-weight: bold;
     text-align: center;
     margin: 20px 0;
-    color: #ff0000;
+    color: #333;
+  }
+
+  .timer.warning {
+    color: #ff9800;
+  }
+
+  .timer.danger {
+    color: #f44336;
+    animation: pulse 1s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   .text-input {
     width: 100%;
+    max-width: 600px;
     padding: 15px;
     font-size: 18px;
     border: 2px solid #ccc;
     border-radius: 4px;
-    margin-bottom: 20px;
+    margin: 20px auto;
+    display: block;
   }
 
   .submit-btn {
@@ -150,6 +218,8 @@
     border: none;
     border-radius: 4px;
     cursor: pointer;
+    display: block;
+    margin: 20px auto;
   }
 
   .submit-btn:hover {
@@ -164,118 +234,226 @@
 </style>
 
 <script>
-  // Canvas描画機能（次のステップで実装）
-  document.addEventListener('DOMContentLoaded', () => {
-    const canvas = document.getElementById('drawing-canvas');
-    if (!canvas) return;
+class DrawingApp {
+  constructor() {
+    this.canvas = document.getElementById('drawing-canvas');
+    if (!this.canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    let isDrawing = false;
-    let currentTool = 'pen';
-    let currentColor = '#000000';
-    let brushSize = 3;
+    this.ctx = this.canvas.getContext('2d');
+    this.isDrawing = false;
+    this.currentTool = 'pen';
+    this.currentColor = '#000000';
+    this.lineWidth = 5;
+    this.eraserWidth = 20;
 
-    // ツール選択
-    document.getElementById('pen-tool')?.addEventListener('click', () => {
-      currentTool = 'pen';
-      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('pen-tool').classList.add('active');
+    this.initCanvas();
+    this.bindEvents();
+    this.setupTools();
+    this.setupColorPalette();
+  }
+
+  initCanvas() {
+    const container = document.querySelector('.canvas-container');
+    const containerRect = container.getBoundingClientRect();
+
+    const maxWidth = Math.min(containerRect.width - 40, 800);
+    const maxHeight = 600;
+
+    this.canvas.width = maxWidth;
+    this.canvas.height = maxHeight;
+
+    // 高DPI対応
+    const dpr = window.devicePixelRatio || 1;
+    const rect = this.canvas.getBoundingClientRect();
+
+    this.canvas.width = rect.width * dpr;
+    this.canvas.height = rect.height * dpr;
+    this.canvas.style.width = rect.width + 'px';
+    this.canvas.style.height = rect.height + 'px';
+
+    this.ctx.scale(dpr, dpr);
+
+    // 描画設定
+    this.ctx.lineCap = 'round';
+    this.ctx.lineJoin = 'round';
+    this.ctx.imageSmoothingEnabled = true;
+
+    // 背景を白に設定
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  bindEvents() {
+    // マウスイベント
+    this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+    this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+    this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+    this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+
+    // タッチイベント
+    this.canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      this.canvas.dispatchEvent(mouseEvent);
     });
 
-    document.getElementById('eraser-tool')?.addEventListener('click', () => {
-      currentTool = 'eraser';
-      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
-      document.getElementById('eraser-tool').classList.add('active');
+    this.canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const mouseEvent = new MouseEvent('mousemove', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      });
+      this.canvas.dispatchEvent(mouseEvent);
     });
 
-    document.getElementById('color-picker')?.addEventListener('change', (e) => {
-      currentColor = e.target.value;
+    this.canvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      const mouseEvent = new MouseEvent('mouseup', {});
+      this.canvas.dispatchEvent(mouseEvent);
     });
+  }
 
-    document.getElementById('brush-size')?.addEventListener('change', (e) => {
-      brushSize = e.target.value;
+  setupTools() {
+    const penBtn = document.getElementById('pen-btn');
+    const eraserBtn = document.getElementById('eraser-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    penBtn?.addEventListener('click', () => this.selectTool('pen'));
+    eraserBtn?.addEventListener('click', () => this.selectTool('eraser'));
+    clearBtn?.addEventListener('click', () => this.clearCanvas());
+  }
+
+  setupColorPalette() {
+    const colorOptions = document.querySelectorAll('.color-option');
+    colorOptions.forEach(option => {
+      option.addEventListener('click', () => {
+        const color = option.dataset.color;
+        this.selectColor(color);
+
+        colorOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+      });
     });
+  }
 
-    document.getElementById('clear-canvas')?.addEventListener('click', () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    });
+  selectTool(tool) {
+    this.currentTool = tool;
 
-    // 描画処理
-    canvas.addEventListener('mousedown', startDrawing);
-    canvas.addEventListener('mousemove', draw);
-    canvas.addEventListener('mouseup', stopDrawing);
-    canvas.addEventListener('mouseout', stopDrawing);
+    document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+    document.getElementById(`${tool}-btn`)?.classList.add('active');
 
-    function startDrawing(e) {
-      isDrawing = true;
-      draw(e);
+    if (tool === 'pen') {
+      this.canvas.style.cursor = 'crosshair';
+    } else if (tool === 'eraser') {
+      this.canvas.style.cursor = 'grab';
     }
+  }
 
-    function draw(e) {
-      if (!isDrawing) return;
+  selectColor(color) {
+    this.currentColor = color;
+    if (this.currentTool === 'eraser') {
+      this.selectTool('pen');
+    }
+  }
 
-      const rect = canvas.getBoundingClientRect();
-      const x = e.clientX - rect.left;
-      const y = e.clientY - rect.top;
+  getMousePos(e) {
+    const rect = this.canvas.getBoundingClientRect();
+    const scaleX = this.canvas.width / rect.width;
+    const scaleY = this.canvas.height / rect.height;
 
-      ctx.lineWidth = brushSize;
-      ctx.lineCap = 'round';
+    return {
+      x: (e.clientX - rect.left) * scaleX / (window.devicePixelRatio || 1),
+      y: (e.clientY - rect.top) * scaleY / (window.devicePixelRatio || 1)
+    };
+  }
 
-      if (currentTool === 'pen') {
-        ctx.strokeStyle = currentColor;
-      } else {
-        ctx.strokeStyle = '#ffffff';
+  startDrawing(e) {
+    this.isDrawing = true;
+    const pos = this.getMousePos(e);
+
+    this.ctx.beginPath();
+    this.ctx.moveTo(pos.x, pos.y);
+
+    if (this.currentTool === 'pen') {
+      this.ctx.globalCompositeOperation = 'source-over';
+      this.ctx.strokeStyle = this.currentColor;
+      this.ctx.lineWidth = this.lineWidth;
+    } else if (this.currentTool === 'eraser') {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.ctx.lineWidth = this.eraserWidth;
+    }
+  }
+
+  draw(e) {
+    if (!this.isDrawing) return;
+
+    const pos = this.getMousePos(e);
+    this.ctx.lineTo(pos.x, pos.y);
+    this.ctx.stroke();
+  }
+
+  stopDrawing() {
+    if (this.isDrawing) {
+      this.isDrawing = false;
+      this.ctx.beginPath();
+    }
+  }
+
+  clearCanvas() {
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    this.ctx.fillStyle = 'white';
+    this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+  }
+
+  getImageData() {
+    return this.canvas.toDataURL('image/png');
+  }
+}
+
+// 初期化（Turbo対応）
+function initializeDrawingApp() {
+  const app = new DrawingApp();
+
+  // タイマー機能
+  const timerDisplay = document.getElementById('timer-display');
+  if (timerDisplay) {
+    let timeLeft = 60;
+    const timerInterval = setInterval(() => {
+      timeLeft--;
+      timerDisplay.textContent = timeLeft;
+
+      if (timeLeft <= 10) {
+        timerDisplay.classList.add('danger');
+      } else if (timeLeft <= 20) {
+        timerDisplay.classList.add('warning');
       }
 
-      ctx.lineTo(x, y);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-    }
+      if (timeLeft <= 0) {
+        clearInterval(timerInterval);
+        // Turboでフォーム送信するため、requestSubmit()を使用
+        document.getElementById('drawing-form')?.requestSubmit();
+      }
+    }, 1000);
+  }
 
-    function stopDrawing() {
-      isDrawing = false;
-      ctx.beginPath();
-    }
+  // フォーム送信時に画像データを設定
+  const form = document.getElementById('drawing-form');
+  form?.addEventListener('submit', (e) => {
+    const imageData = app.getImageData();
+    document.getElementById('canvas-image-data').value = imageData;
 
-    // フォーム送信時にCanvasをBase64エンコード
-    const form = canvas.closest('form');
-    form?.addEventListener('submit', (e) => {
-      const imageData = canvas.toDataURL('image/png');
-
-      // Base64をBlobに変換
-      fetch(imageData)
-        .then(res => res.blob())
-        .then(blob => {
-          const file = new File([blob], 'drawing.png', { type: 'image/png' });
-          const dataTransfer = new DataTransfer();
-          dataTransfer.items.add(file);
-
-          // hidden fieldに設定する代わりに、FileInputを作成
-          const fileInput = document.createElement('input');
-          fileInput.type = 'file';
-          fileInput.name = 'image';
-          fileInput.files = dataTransfer.files;
-          fileInput.style.display = 'none';
-          form.appendChild(fileInput);
-
-          document.getElementById('canvas-image-data')?.remove();
-        });
-    });
-
-    // タイマー（60秒）
-    const timerElement = document.getElementById('timer');
-    if (timerElement) {
-      let timeLeft = 60;
-      const timerInterval = setInterval(() => {
-        timeLeft--;
-        timerElement.textContent = timeLeft;
-
-        if (timeLeft <= 0) {
-          clearInterval(timerInterval);
-          form?.submit();
-        }
-      }, 1000);
-    }
+    // Turboでフォームを送信（preventDefaultしない）
+    // e.target.submit()を使うとTurboがバイパスされるので、
+    // preventDefaultせずにブラウザのデフォルト動作に任せる
   });
+}
+
+// DOMContentLoadedとturbo:loadの両方で初期化
+document.addEventListener('DOMContentLoaded', initializeDrawingApp);
+document.addEventListener('turbo:load', initializeDrawingApp);
 </script>

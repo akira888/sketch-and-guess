@@ -14,6 +14,8 @@ Rails.application.routes.draw do
 
   resources :rooms, only: [ :index, :new, :create, :show ] do
     get :results, on: :member
+    get :game_redirect, on: :member
+    get :game_next_turn, on: :member
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
