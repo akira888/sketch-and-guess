@@ -4,6 +4,19 @@ class SketchBooksController < ApplicationController
   before_action :set_game, only: [ :show, :add_page ]
 
   def show
+    Rails.logger.info "=== SketchBooksController#show ==="
+    Rails.logger.info "User: #{@current_user.name} (#{@current_user.id})"
+    Rails.logger.info "Current sketch_book_id: #{@current_user.current_sketch_book_id}"
+    Rails.logger.info "Viewing sketch_book_id: #{@sketch_book.id}"
+    Rails.logger.info "Game turn: #{@game.current_turn}, type: #{@game.turn_type}"
+
+    # ユーザーが正しいスケッチブックを見ているかチェック
+    if @current_user.current_sketch_book_id && @current_user.current_sketch_book_id != @sketch_book.id
+      Rails.logger.info "Redirecting to correct sketch book: #{@current_user.current_sketch_book_id}"
+      # 正しいスケッチブックにリダイレクト
+      redirect_to sketch_book_path(@current_user.current_sketch_book_id) and return
+    end
+
     # 現在のターンタイプに応じて表示を変える
     @current_turn = @game.current_turn
     @turn_type = @game.turn_type
@@ -132,6 +145,14 @@ class SketchBooksController < ApplicationController
       book.pages.count >= @game.current_turn
     end
 
+    Rails.logger.info "=== check_and_advance_turn ==="
+    Rails.logger.info "Current turn: #{@game.current_turn}"
+    Rails.logger.info "All completed: #{all_completed}"
+    Rails.logger.info "Sketch books count: #{sketch_books.count}"
+    sketch_books.each do |book|
+      Rails.logger.info "  Book #{book.id}: #{book.pages.count} pages"
+    end
+
     if all_completed
       # スケッチブックを回す
       @game.rotate_sketch_books!(room.member_names)
@@ -174,23 +195,22 @@ class SketchBooksController < ApplicationController
       broadcast_waiting_status(room, sketch_books)
 
       # Turbo Streamで待機状態を表示（リダイレクトせずにストリーム購読を維持）
+      completed_count = sketch_books.count { |book| book.pages.count >= @game.current_turn }
+      total_count = sketch_books.count
+
       respond_to do |format|
         format.html { redirect_to sketch_book_path(@sketch_book), notice: "ページを追加しました。他のプレイヤーを待っています..." }
         format.turbo_stream do
-          completed_count = sketch_books.count { |book| book.pages.count >= @game.current_turn }
-          total_count = sketch_books.count
-
-          render turbo_stream: [
-            turbo_stream.update("current-task", html: "<h2>他のプレイヤーを待っています...</h2>"),
-            turbo_stream.update("waiting-info",
-              html: "<p>ページを追加しました。#{completed_count}/#{total_count}人が完了しました。</p>")
-          ]
+          render turbo_stream: turbo_stream.update("waiting-info",
+            html: "<p>ページを追加しました。#{completed_count}/#{total_count}人が完了しました。</p>")
         end
       end
     end
   end
 
   def update_current_sketch_books(room, sketch_books)
+    Rails.logger.info "=== update_current_sketch_books ==="
+
     # 各ユーザーのcurrent_sketch_book_idを更新
     room.member_order_array.each do |member|
       user = Cache::User.find(member["user_id"])
@@ -202,8 +222,11 @@ class SketchBooksController < ApplicationController
       end
 
       if current_book
+        Rails.logger.info "User #{user.name}: current_sketch_book_id = #{current_book.id}"
         user.current_sketch_book_id = current_book.id
         user.save!
+      else
+        Rails.logger.warn "User #{user.name}: No matching sketch book found!"
       end
     end
   end
@@ -222,20 +245,15 @@ class SketchBooksController < ApplicationController
   end
 
   def broadcast_next_turn(room)
-    # 全ユーザーに次のターン開始を通知
-    # 各ユーザーは自分のcurrent_sketch_book_idにリダイレクト
+    Rails.logger.info "=== broadcast_next_turn ==="
+    Rails.logger.info "Broadcasting to game_#{room.id}"
+
+    # 全ユーザーにページリロードを指示
+    # showアクションで正しいスケッチブックにリダイレクトされる
     html = <<~HTML
       <script>
-        (function() {
-          // 自分の次のスケッチブックIDを取得してリダイレクト
-          fetch('#{game_next_turn_room_path(room.id)}')
-            .then(response => response.json())
-            .then(data => {
-              if (data.sketch_book_id) {
-                Turbo.visit(data.sketch_book_url);
-              }
-            });
-        })();
+        console.log('次のターンが開始されました。ページをリロードします。');
+        window.location.reload();
       </script>
     HTML
 
@@ -244,6 +262,8 @@ class SketchBooksController < ApplicationController
       target: "body",
       html: html
     )
+
+    Rails.logger.info "Broadcast sent successfully"
   end
 
   def broadcast_redirect_to_room(room_id)

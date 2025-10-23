@@ -421,9 +421,11 @@ function initializeDrawingApp() {
 
   // タイマー機能
   const timerDisplay = document.getElementById('timer-display');
+  let timerInterval = null;
+
   if (timerDisplay) {
     let timeLeft = 60;
-    const timerInterval = setInterval(() => {
+    timerInterval = setInterval(() => {
       timeLeft--;
       timerDisplay.textContent = timeLeft;
 
@@ -435,25 +437,69 @@ function initializeDrawingApp() {
 
       if (timeLeft <= 0) {
         clearInterval(timerInterval);
-        // Turboでフォーム送信するため、requestSubmit()を使用
-        document.getElementById('drawing-form')?.requestSubmit();
+        // カウント0で自動送信
+        const drawingForm = document.getElementById('drawing-form');
+        if (drawingForm) {
+          console.log('タイマー終了：自動送信します');
+          drawingForm.requestSubmit();
+        }
       }
     }, 1000);
   }
 
   // フォーム送信時に画像データを設定
   const form = document.getElementById('drawing-form');
+  let isSubmitting = false;
+
   form?.addEventListener('submit', (e) => {
+    // 二重送信防止
+    if (isSubmitting) {
+      e.preventDefault();
+      return;
+    }
+
+    isSubmitting = true;
+
+    // タイマーを停止
+    if (timerInterval) {
+      clearInterval(timerInterval);
+    }
+
+    // Canvas画像データを取得してhidden fieldに設定
     const imageData = app.getImageData();
     document.getElementById('canvas-image-data').value = imageData;
 
+    console.log('フォーム送信：画像データを設定しました');
+
     // Turboでフォームを送信（preventDefaultしない）
-    // e.target.submit()を使うとTurboがバイパスされるので、
-    // preventDefaultせずにブラウザのデフォルト動作に任せる
   });
 }
 
 // DOMContentLoadedとturbo:loadの両方で初期化
 document.addEventListener('DOMContentLoaded', initializeDrawingApp);
 document.addEventListener('turbo:load', initializeDrawingApp);
+
+// ゲーム状態の定期チェック（ブロードキャストのフォールバック）
+(function() {
+  const currentTurn = <%= @current_turn %>;
+  const currentUserId = '<%= @current_user.id %>';
+  const roomId = '<%= @game.room_id %>';
+
+  // 5秒ごとにゲーム状態をチェック
+  setInterval(() => {
+    fetch('/rooms/' + roomId + '/game_next_turn')
+      .then(response => response.json())
+      .then(data => {
+        // 自分のcurrent_sketch_book_idが変わっていたらリロード
+        const currentPath = window.location.pathname;
+        const expectedPath = data.sketch_book_url;
+
+        if (currentPath !== expectedPath) {
+          console.log('ゲーム状態が変更されました。ページをリロードします。');
+          window.location.href = expectedPath;
+        }
+      })
+      .catch(err => console.error('Game state check failed:', err));
+  }, 5000); // 5秒ごとにチェック
+})();
 </script>
