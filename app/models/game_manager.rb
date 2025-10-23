@@ -92,7 +92,7 @@ class GameManager
     Page.create!(
       sketch_book_id: sketch_book.id,
       page_number: 1,
-      page_type: :prompt,
+      page_type: "prompt",
       content: prompt.word,
       user_name: user_name
     )

@@ -1,0 +1,281 @@
+<div class="game-screen">
+  <div class="game-header">
+    <h1>Sketch & Guess</h1>
+    <div class="game-info">
+      <p>ターン: <%= @current_turn %></p>
+      <p>ラウンド: <%= @game.current_round %> / <%= @room.total_round %></p>
+    </div>
+  </div>
+
+  <div class="game-content">
+    <% if @latest_page %>
+      <div class="previous-page">
+        <h2>前のページ</h2>
+        <% if @latest_page.sketch? %>
+          <%= image_tag @latest_page.image, alt: "前のプレイヤーの絵" %>
+        <% elsif @latest_page.text? || @latest_page.prompt? %>
+          <p class="text-content"><%= @latest_page.content %></p>
+        <% end %>
+      </div>
+    <% end %>
+
+    <div class="current-task">
+      <% if @turn_type == "sketch" %>
+        <h2>絵を描いてください（60秒）</h2>
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, local: true, multipart: true do |f| %>
+          <div id="canvas-container">
+            <canvas id="drawing-canvas" width="800" height="600"></canvas>
+          </div>
+
+          <div class="canvas-tools">
+            <button type="button" id="pen-tool" class="tool-btn active">ペン</button>
+            <button type="button" id="eraser-tool" class="tool-btn">消しゴム</button>
+            <input type="color" id="color-picker" value="#000000">
+            <input type="range" id="brush-size" min="1" max="20" value="3">
+            <button type="button" id="clear-canvas" class="tool-btn">クリア</button>
+          </div>
+
+          <div id="timer" class="timer">60</div>
+
+          <%= f.hidden_field :image, id: "canvas-image-data" %>
+          <%= f.submit "完了", class: "submit-btn" %>
+        <% end %>
+
+      <% elsif @turn_type == "text" %>
+        <h2>絵を見て、何が描かれているか答えてください</h2>
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, local: true do |f| %>
+          <%= f.text_field :content, placeholder: "ここに答えを入力してください", class: "text-input", autofocus: true %>
+          <%= f.submit "回答する", class: "submit-btn" %>
+        <% end %>
+
+        <div class="waiting-info">
+          <p>他のプレイヤーの進捗を待っています...</p>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>
+
+<style>
+  .game-screen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .game-header {
+    text-align: center;
+    margin-bottom: 30px;
+  }
+
+  .game-info {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+  }
+
+  .previous-page {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: #f5f5f5;
+    border-radius: 8px;
+  }
+
+  .previous-page img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .text-content {
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    padding: 40px;
+  }
+
+  #canvas-container {
+    border: 2px solid #333;
+    display: inline-block;
+    margin-bottom: 20px;
+  }
+
+  #drawing-canvas {
+    display: block;
+    cursor: crosshair;
+    background: white;
+  }
+
+  .canvas-tools {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .tool-btn {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+  }
+
+  .tool-btn.active {
+    background: #007bff;
+    color: white;
+  }
+
+  .timer {
+    font-size: 48px;
+    font-weight: bold;
+    text-align: center;
+    margin: 20px 0;
+    color: #ff0000;
+  }
+
+  .text-input {
+    width: 100%;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 20px;
+  }
+
+  .submit-btn {
+    padding: 15px 40px;
+    font-size: 18px;
+    background: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .submit-btn:hover {
+    background: #218838;
+  }
+
+  .waiting-info {
+    margin-top: 30px;
+    text-align: center;
+    color: #666;
+  }
+</style>
+
+<script>
+  // Canvas描画機能（次のステップで実装）
+  document.addEventListener('DOMContentLoaded', () => {
+    const canvas = document.getElementById('drawing-canvas');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    let isDrawing = false;
+    let currentTool = 'pen';
+    let currentColor = '#000000';
+    let brushSize = 3;
+
+    // ツール選択
+    document.getElementById('pen-tool')?.addEventListener('click', () => {
+      currentTool = 'pen';
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('pen-tool').classList.add('active');
+    });
+
+    document.getElementById('eraser-tool')?.addEventListener('click', () => {
+      currentTool = 'eraser';
+      document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('eraser-tool').classList.add('active');
+    });
+
+    document.getElementById('color-picker')?.addEventListener('change', (e) => {
+      currentColor = e.target.value;
+    });
+
+    document.getElementById('brush-size')?.addEventListener('change', (e) => {
+      brushSize = e.target.value;
+    });
+
+    document.getElementById('clear-canvas')?.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    // 描画処理
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+
+    function startDrawing(e) {
+      isDrawing = true;
+      draw(e);
+    }
+
+    function draw(e) {
+      if (!isDrawing) return;
+
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      ctx.lineWidth = brushSize;
+      ctx.lineCap = 'round';
+
+      if (currentTool === 'pen') {
+        ctx.strokeStyle = currentColor;
+      } else {
+        ctx.strokeStyle = '#ffffff';
+      }
+
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+    }
+
+    function stopDrawing() {
+      isDrawing = false;
+      ctx.beginPath();
+    }
+
+    // フォーム送信時にCanvasをBase64エンコード
+    const form = canvas.closest('form');
+    form?.addEventListener('submit', (e) => {
+      const imageData = canvas.toDataURL('image/png');
+
+      // Base64をBlobに変換
+      fetch(imageData)
+        .then(res => res.blob())
+        .then(blob => {
+          const file = new File([blob], 'drawing.png', { type: 'image/png' });
+          const dataTransfer = new DataTransfer();
+          dataTransfer.items.add(file);
+
+          // hidden fieldに設定する代わりに、FileInputを作成
+          const fileInput = document.createElement('input');
+          fileInput.type = 'file';
+          fileInput.name = 'image';
+          fileInput.files = dataTransfer.files;
+          fileInput.style.display = 'none';
+          form.appendChild(fileInput);
+
+          document.getElementById('canvas-image-data')?.remove();
+        });
+    });
+
+    // タイマー（60秒）
+    const timerElement = document.getElementById('timer');
+    if (timerElement) {
+      let timeLeft = 60;
+      const timerInterval = setInterval(() => {
+        timeLeft--;
+        timerElement.textContent = timeLeft;
+
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          form?.submit();
+        }
+      }, 1000);
+    }
+  });
+</script>

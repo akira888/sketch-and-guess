@@ -28,6 +28,9 @@ class UsersController < ApplicationController
           game_manager = GameManager.new(@cache_room)
           game = game_manager.start_game!
 
+          # ユーザー情報を再読み込み（sketch_book_idとcurrent_sketch_book_idが設定されている）
+          @cache_user = Cache::User.find(@cache_user.id)
+
           flash[:notice] = "ゲームを開始しました！"
           redirect_to sketch_book_path(@cache_user.current_sketch_book_id || @cache_user.sketch_book_id)
         rescue => e

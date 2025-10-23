@@ -4,15 +4,15 @@ class Page < ApplicationRecord
   has_one_attached :image
 
   # Enums
-  enum page_type: {
+  enum :page_type, {
     prompt: "prompt",
     sketch: "sketch",
     text: "text"
-  }
+  }, validate: true
 
   # Validations
   validates :page_number, presence: true, numericality: { greater_than: 0 }
-  validates :page_type, presence: true, inclusion: { in: page_types.keys }
+  validates :page_type, presence: true
   validates :user_name, presence: true
   validates :sketch_book_id, uniqueness: { scope: :page_number }
 
