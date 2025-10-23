@@ -39,6 +39,16 @@
     <div class="result-number"></div>
     <div class="result-message"></div>
   </div>
+
+  <div id="free-prompt-input" class="free-prompt-input" style="display: none;">
+    <h2>お題を入力してください</h2>
+    <div class="free-prompt-genre"></div>
+    <form id="free-prompt-form">
+      <input type="text" id="free-prompt-text" class="free-prompt-text-input" placeholder="お題を入力..." maxlength="50" required>
+      <button type="submit" class="submit-prompt-btn">決定</button>
+    </form>
+    <p class="free-prompt-hint">あなたのスケッチブックのお題になります</p>
+  </div>
 </div>
 
 <style>
@@ -235,6 +245,79 @@
     font-weight: normal;
   }
 
+  .free-prompt-input {
+    margin-top: 40px;
+    padding: 30px;
+    background: #fff3cd;
+    border: 3px solid #ffc107;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .free-prompt-input h2 {
+    color: #856404;
+    margin-bottom: 20px;
+  }
+
+  .free-prompt-genre {
+    font-size: 18px;
+    color: #856404;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+
+  .free-prompt-text-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .free-prompt-text-input:focus {
+    outline: none;
+    border-color: #ff9800;
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.2);
+  }
+
+  .submit-prompt-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #ffc107, #ff9800);
+    color: #333;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .submit-prompt-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .submit-prompt-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .submit-prompt-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .free-prompt-hint {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #856404;
+    font-style: italic;
+  }
+
   /* レスポンシブ対応 */
   @media (max-width: 768px) {
     .prompt-selection-screen {
@@ -289,8 +372,30 @@
   const rollDiceBtn = document.getElementById('roll-dice-btn');
   const diceFace = document.querySelector('.dice-face');
   const resultDisplay = document.getElementById('result-display');
+  const freePromptInput = document.getElementById('free-prompt-input');
+  const freePromptForm = document.getElementById('free-prompt-form');
+  const freePromptGenre = document.querySelector('.free-prompt-genre');
 
   let isRolling = false;
+  let currentDiceResult = null;
+
+  // お題データ（サーバーから渡される）
+  const prompts = <%= raw @prompts.map { |p| { order: p.order, word: p.word } }.to_json %>;
+
+  // 指定されたorderのお題がFREEかチェック
+  function isPromptFree(order) {
+    const prompt = prompts.find(p => p.order === order);
+    return prompt && (prompt.word === 'FREE' || prompt.word.startsWith('FREE:') || prompt.word.startsWith('FREE_CHOICE:'));
+  }
+
+  // FREEお題のジャンルを取得
+  function getPromptGenre(order) {
+    const prompt = prompts.find(p => p.order === order);
+    if (prompt && (prompt.word.startsWith('FREE:') || prompt.word.startsWith('FREE_CHOICE:'))) {
+      return prompt.word.split(':')[1];
+    }
+    return null;
+  }
 
   // ダイスボタンクリックイベント
   if (rollDiceBtn) {
@@ -326,7 +431,8 @@
       .then(data => {
         if (data.success) {
           console.log('Dice rolled:', data.dice_result);
-          // レスポンスから直接結果を処理
+          currentDiceResult = data.dice_result;
+          // 結果を表示（各ユーザーが自分のお題をチェック）
           showDiceResult(data.dice_result);
         } else {
           alert(data.error || 'エラーが発生しました');
@@ -339,6 +445,104 @@
         resetDiceButton();
       });
     });
+  }
+
+  // FREEお題の入力フォームを表示
+  function showFreePromptInput(diceResult, genre) {
+    console.log('Showing FREE prompt input:', diceResult, genre);
+
+    // ポーリングを停止
+    if (window.promptSelectionPolling) {
+      clearInterval(window.promptSelectionPolling);
+    }
+
+    setTimeout(() => {
+      // アニメーション停止
+      diceFace.classList.remove('rolling');
+      diceFace.textContent = diceResult;
+
+      // 該当するお題カードをハイライト
+      const selectedCard = document.querySelector(`.prompt-card[data-order="${diceResult}"]`);
+      if (selectedCard) {
+        selectedCard.classList.add('selected');
+      }
+
+      // 入力フォームを表示
+      setTimeout(() => {
+        if (genre) {
+          freePromptGenre.textContent = `「${genre}」に関するお題を入力してください`;
+        } else {
+          freePromptGenre.textContent = '自由にお題を入力してください';
+        }
+        freePromptInput.style.display = 'block';
+        document.getElementById('free-prompt-text').focus();
+      }, 500);
+    }, 1500);
+  }
+
+  // FREEお題フォームの送信処理
+  if (freePromptForm) {
+    freePromptForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const promptText = document.getElementById('free-prompt-text').value.trim();
+      if (!promptText) {
+        alert('お題を入力してください');
+        return;
+      }
+
+      const submitBtn = freePromptForm.querySelector('.submit-prompt-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+
+      fetch(`/rooms/${roomId}/submit_free_prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ prompt_text: promptText })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('FREE prompt submitted:', data.prompt_text);
+          showPromptConfirmation(data.prompt_text);
+        } else {
+          alert(data.error || 'エラーが発生しました');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '決定';
+        }
+      })
+      .catch(error => {
+        console.error('Error submitting prompt:', error);
+        alert('お題の送信に失敗しました');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '決定';
+      });
+    });
+  }
+
+  // お題確定後の表示（FREE入力完了後）
+  function showPromptConfirmation(promptText) {
+    freePromptInput.style.display = 'none';
+
+    const resultNumber = resultDisplay.querySelector('.result-number');
+    const resultMessage = resultDisplay.querySelector('.result-message');
+
+    resultNumber.textContent = currentDiceResult;
+    resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${promptText}</span><br>に決まりました！`;
+
+    resultDisplay.style.display = 'block';
+
+    // 待機メッセージ（他のプレイヤーの準備待ち）
+    const waitingEl = document.createElement('div');
+    waitingEl.className = 'countdown';
+    waitingEl.textContent = '他のプレイヤーの準備を待っています...';
+    resultDisplay.appendChild(waitingEl);
+
+    // 全員の準備完了を待つ
+    waitForAllPlayersReady(waitingEl);
   }
 
   // ダイス結果を表示する関数
@@ -363,43 +567,90 @@
 
         // 結果表示
         setTimeout(() => {
-          const resultNumber = resultDisplay.querySelector('.result-number');
-          const resultMessage = resultDisplay.querySelector('.result-message');
           const selectedWord = selectedCard.querySelector('.prompt-word').textContent;
 
-          resultNumber.textContent = result;
-          resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${selectedWord}</span><br>に決まりました！`;
-
-          resultDisplay.style.display = 'block';
-
-          // 結果を表示してから、さらに待機時間を追加
-          let countdown = 5;
-          const countdownEl = document.createElement('div');
-          countdownEl.className = 'countdown';
-          countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
-          resultDisplay.appendChild(countdownEl);
-
-          const countdownInterval = setInterval(() => {
-            countdown--;
-            if (countdown > 0) {
-              countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+          // 自分のお題がFREEかチェック
+          if (isPromptFree(result)) {
+            // FREEの場合は入力フォームを表示
+            const genre = getPromptGenre(result);
+            if (genre) {
+              freePromptGenre.textContent = `「${genre}」に関するお題を入力してください`;
             } else {
-              clearInterval(countdownInterval);
-              countdownEl.textContent = 'ゲームを開始します！';
-              setTimeout(() => {
-                window.location.href = `/rooms/${roomId}`;
-              }, 500);
+              freePromptGenre.textContent = '自由にお題を入力してください';
             }
-          }, 1000);
+            freePromptInput.style.display = 'block';
+            document.getElementById('free-prompt-text').focus();
+          } else {
+            // 通常のお題の場合は結果を表示してから、全員の準備を待つ
+            const resultNumber = resultDisplay.querySelector('.result-number');
+            const resultMessage = resultDisplay.querySelector('.result-message');
+
+            resultNumber.textContent = result;
+            resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${selectedWord}</span><br>に決まりました！`;
+
+            resultDisplay.style.display = 'block';
+
+            // 待機メッセージ（他のプレイヤーのFREE入力待ち）
+            const waitingEl = document.createElement('div');
+            waitingEl.className = 'countdown';
+            waitingEl.textContent = '他のプレイヤーのお題入力を待っています...';
+            resultDisplay.appendChild(waitingEl);
+
+            // 全員の準備完了を待つポーリング
+            waitForAllPlayersReady(waitingEl);
+          }
         }, 500);
       }
     }, 1500); // 1.5秒間アニメーション
+  }
+
+  // 全員の準備完了を待つ関数
+  function waitForAllPlayersReady(waitingEl) {
+    const checkInterval = setInterval(() => {
+      fetch(`/rooms/${roomId}/game_redirect`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.all_ready) {
+          clearInterval(checkInterval);
+          // 全員準備完了、カウントダウン開始
+          waitingEl.textContent = '全員準備完了！';
+          setTimeout(() => {
+            startGameCountdown(waitingEl);
+          }, 500);
+        }
+      })
+      .catch(err => console.error('Ready check failed:', err));
+    }, 1000); // 1秒ごとにチェック
+  }
+
+  // ゲーム開始カウントダウン
+  function startGameCountdown(countdownEl) {
+    let countdown = 3;
+    countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+      } else {
+        clearInterval(countdownInterval);
+        countdownEl.textContent = 'ゲームを開始します！';
+        setTimeout(() => {
+          window.location.href = `/rooms/${roomId}`;
+        }, 500);
+      }
+    }, 1000);
   }
 
   // ブロードキャスト経由でのダイス結果も処理（他のプレイヤー用）
   document.addEventListener('diceRolled', (event) => {
     const result = event.detail.result;
     console.log('Dice result received via broadcast:', result);
+    currentDiceResult = result;
     showDiceResult(result);
   });
 
@@ -429,8 +680,8 @@
       if (data.dice_result && !diceResultShown) {
         console.log('ダイス結果を検出（ポーリング）:', data.dice_result);
         diceResultShown = true;
+        currentDiceResult = data.dice_result;
         showDiceResult(data.dice_result);
-        // showDiceResult内で自動的にリダイレクトされる
         return;
       }
 

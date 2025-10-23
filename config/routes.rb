@@ -14,6 +14,7 @@ Rails.application.routes.draw do
     get :game_next_turn, on: :member
     get :prompt_selection, on: :member
     post :roll_dice, on: :member
+    post :submit_free_prompt, on: :member
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"

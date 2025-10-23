@@ -153,12 +153,13 @@ class GameManager
         room_id: room.id,
         owner_name: user_name,
         prompt_id: prompt.id,
+        prompt_text: prompt.word, # 初期値としてprompt.wordを設定（FREEの場合は後で更新）
         round: current_round,
         completed: false
       )
 
       # 1ページ目（promptページ）を作成
-      create_prompt_page(sketch_book, user_name, prompt)
+      create_prompt_page(sketch_book, user_name, prompt.word)
 
       # スケッチブックとユーザーの関連付けを保存
       sketch_books << { sketch_book: sketch_book, user_id: user_id, user_name: user_name }
@@ -168,12 +169,12 @@ class GameManager
   end
 
   # 1ページ目（お題ページ）を作成
-  def create_prompt_page(sketch_book, user_name, prompt)
+  def create_prompt_page(sketch_book, user_name, prompt_text)
     Page.create!(
       sketch_book_id: sketch_book.id,
       page_number: 1,
       page_type: "prompt",
-      content: prompt.word,
+      content: prompt_text,
       user_name: user_name
     )
   end
