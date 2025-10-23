@@ -58,11 +58,20 @@ class RoomsController < ApplicationController
   end
 
   def game_next_turn
+    room_id = params[:id]
+    game = Cache::Game.find_by_room(room_id)
     user_id = session[:user_id]
     user = Cache::User.find(user_id)
 
-    if user&.current_sketch_book_id
+    # ゲームが終了している場合は結果画面へ
+    if game&.finished? || game&.round_finished?
       render json: {
+        game_finished: true,
+        results_url: results_room_path(room_id)
+      }
+    elsif user&.current_sketch_book_id
+      render json: {
+        game_finished: false,
         sketch_book_id: user.current_sketch_book_id,
         sketch_book_url: sketch_book_path(user.current_sketch_book_id)
       }

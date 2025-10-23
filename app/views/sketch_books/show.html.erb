@@ -592,6 +592,13 @@ document.addEventListener('turbo:load', initializeDrawingApp);
     fetch('/rooms/' + roomId + '/game_next_turn')
       .then(response => response.json())
       .then(data => {
+        // ゲームが終了している場合は結果画面へ
+        if (data.game_finished) {
+          console.log('ゲームが終了しました。結果画面に移動します。');
+          window.location.href = data.results_url;
+          return;
+        }
+
         // 自分のcurrent_sketch_book_idが変わっていたらリロード
         const currentPath = window.location.pathname;
         const expectedPath = data.sketch_book_url;
