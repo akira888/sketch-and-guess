@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#4A90E2" stroke="#2C5AA0" stroke-width="2"/>
+
+  <!-- Pencil body -->
+  <g transform="translate(30, 25) rotate(45 20 25)">
+    <!-- Pencil wood part -->
+    <rect x="10" y="10" width="20" height="50" fill="#FDB94E" stroke="#D69838" stroke-width="1.5"/>
+
+    <!-- Pencil tip (graphite) -->
+    <polygon points="20,60 10,70 30,70" fill="#333" stroke="#000" stroke-width="1"/>
+
+    <!-- Pencil eraser -->
+    <rect x="10" y="5" width="20" height="8" fill="#E74C3C" stroke="#C0392B" stroke-width="1"/>
+
+    <!-- Metal band -->
+    <rect x="10" y="8" width="20" height="3" fill="#BDC3C7" stroke="#95A5A6" stroke-width="0.5"/>
+
+    <!-- Wood texture lines -->
+    <line x1="20" y1="15" x2="20" y2="55" stroke="#D69838" stroke-width="1" opacity="0.5"/>
+  </g>
+
+  <!-- Question mark (representing "guess") -->
+  <g transform="translate(55, 55)">
+    <text x="0" y="0" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="white" stroke="#2C5AA0" stroke-width="1">?</text>
+  </g>
+</svg>
