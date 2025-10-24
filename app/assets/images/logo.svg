@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="120">
+  <!-- Background -->
+  <defs>
+    <!-- Gradient for background -->
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFF9E6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FFE4B5;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Shadow filter -->
+    <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Pencil Icon (left) -->
+  <g transform="translate(20, 30)">
+    <!-- Pencil body -->
+    <rect x="0" y="15" width="35" height="12" fill="#FDB94E" stroke="#333" stroke-width="2" rx="1"/>
+    <!-- Pencil tip -->
+    <polygon points="35,15 35,27 45,21" fill="#333" stroke="#333" stroke-width="2"/>
+    <!-- Eraser -->
+    <rect x="-8" y="15" width="8" height="12" fill="#E74C3C" stroke="#333" stroke-width="2" rx="1"/>
+    <!-- Metal band -->
+    <rect x="-2" y="15" width="2" height="12" fill="#C0C0C0"/>
+    <!-- Pencil lines (decorative) -->
+    <line x1="8" y1="15" x2="8" y2="27" stroke="#D4A03A" stroke-width="1"/>
+    <line x1="28" y1="15" x2="28" y2="27" stroke="#D4A03A" stroke-width="1"/>
+  </g>
+
+  <!-- Main Text: "Sketch & Guess" -->
+  <g filter="url(#shadow)">
+    <!-- "Sketch" -->
+    <text x="70" y="50" font-family="'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive, sans-serif"
+          font-size="36" font-weight="bold" fill="#FF6B6B" stroke="#333" stroke-width="1">
+      Sketch
+    </text>
+
+    <!-- "&" symbol with playful rotation -->
+    <text x="202" y="48" font-family="'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif"
+          font-size="28" font-weight="bold" fill="#4ECDC4" stroke="#333" stroke-width="1"
+          transform="rotate(-10, 217, 48)">
+      &
+    </text>
+
+    <!-- "Guess" -->
+    <text x="234" y="50" font-family="'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive, sans-serif"
+          font-size="36" font-weight="bold" fill="#95E1D3" stroke="#333" stroke-width="1">
+      Guess
+    </text>
+  </g>
+
+  <!-- Subtitle with playful elements -->
+  <text x="75" y="75" font-family="'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif"
+        font-size="14" fill="#666" font-style="italic">
+    絵しりとり伝言ゲーム
+  </text>
+
+  <!-- Question Mark Icon (right) with wobble -->
+  <g transform="translate(345, 25)">
+    <circle cx="15" cy="15" r="18" fill="#FFD93D" stroke="#333" stroke-width="2.5"/>
+    <text x="15" y="24" font-family="'Comic Sans MS', Arial, sans-serif"
+          font-size="26" font-weight="bold" fill="#333" text-anchor="middle">
+      ?
+    </text>
+  </g>
+
+  <!-- Decorative doodles -->
+  <!-- Star 1 -->
+  <g transform="translate(65, 15)">
+    <polygon points="5,0 6,3.5 10,3.5 7,5.5 8,9 5,7 2,9 3,5.5 0,3.5 4,3.5"
+             fill="#FFB6C1" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- Star 2 -->
+  <g transform="translate(310, 70)">
+    <polygon points="4,0 5,3 8,3 6,5 7,8 4,6 1,8 2,5 0,3 3,3"
+             fill="#98D8C8" stroke="#333" stroke-width="1"/>
+  </g>
+
+  <!-- Small circles (decorative) -->
+  <circle cx="195" cy="70" r="3" fill="#FF6B6B" opacity="0.6"/>
+  <circle cx="285" cy="20" r="2.5" fill="#4ECDC4" opacity="0.6"/>
+  <circle cx="330" cy="15" r="2" fill="#FFD93D" opacity="0.6"/>
+
+  <!-- Wavy underline -->
+  <path d="M 70 80 Q 85 83, 100 80 T 130 80 T 160 80 T 190 80 T 220 80 T 250 80 T 280 80 T 310 80"
+        stroke="#FF6B6B" stroke-width="2" fill="none" opacity="0.4"/>
+</svg>
