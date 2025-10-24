@@ -1,24 +1,6 @@
 <div class="results-screen">
   <h1 class="results-title">ゲーム結果</h1>
 
-  <div class="game-summary-card">
-    <h2 class="summary-title">ゲーム情報</h2>
-    <div class="summary-content">
-      <div class="summary-item">
-        <span class="summary-label">ルームID</span>
-        <span class="summary-value"><%= @cache_room.id %></span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">参加人数</span>
-        <span class="summary-value"><%= @cache_room.entering_count %>人</span>
-      </div>
-      <div class="summary-item">
-        <span class="summary-label">ラウンド数</span>
-        <span class="summary-value"><%= @cache_room.total_round %></span>
-      </div>
-    </div>
-  </div>
-
   <div class="sketch-books-results">
     <% @sketch_books.each_with_index do |sketch_book, index| %>
       <div class="sketch-book" id="sketch-book-<%= index %>">
@@ -44,7 +26,7 @@
                   </div>
                 <% elsif page.text? %>
                   <div class="text-page">
-                    <p class="text-answer"><%= page.content %></p>
+                    <p class="text-answer">回答：<%= page.content %></p>
                   </div>
                 <% end %>
               </div>
@@ -64,12 +46,6 @@
               <p><%= sketch_book.pages.last.content %></p>
             </div>
           </div>
-
-          <% if sketch_book.pages.first.content == sketch_book.pages.last.content %>
-            <p class="match-result success">✓ 一致しました！</p>
-          <% else %>
-            <p class="match-result fail">✗ 一致しませんでした</p>
-          <% end %>
         </div>
       </div>
     <% end %>

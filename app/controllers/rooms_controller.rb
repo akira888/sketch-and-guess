@@ -2,14 +2,14 @@ class RoomsController < ApplicationController
   def index; end
 
   def new
-    @cache_room = Cache::Room.new(initial_params)
-  end
-
-  def create
     # 新しいルームを作るので、古いセッションをクリア
     session[:user_id] = nil
     session[:room_id] = nil
 
+    @cache_room = Cache::Room.new(initial_params)
+  end
+
+  def create
     @cache_room = Cache::Room.new(room_params)
 
     if @cache_room.save
