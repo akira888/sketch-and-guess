@@ -1,0 +1,313 @@
+<div class="archive-page">
+  <div class="archive-page-header">
+    <%= link_to "BACK TO TOP", root_path, class: "back-to-top" %>
+    <h2 class="page-title">Archives</h2>
+  </div>
+
+  <% if @sketch_books.empty? %>
+    <div class="empty-message">
+      <p>まだ完成したスケッチブックがありません</p>
+      <%= link_to "ゲームを始める", root_path, class: "start-game-btn" %>
+    </div>
+  <% else %>
+    <div class="sketch-books-grid">
+      <% @sketch_books.each do |sketch_book| %>
+        <%= link_to sketch_book_path(sketch_book), class: "sketch-book-link" do %>
+          <div class="sketch-book-cover">
+            <!-- スケッチブックの表紙 -->
+            <div class="cover-top">
+              <div class="cover-content">
+                <div class="cover-title">
+                  <%= sketch_book.prompt_text || sketch_book.prompt&.word || "お題なし" %>
+                </div>
+                <div class="cover-subtitle">
+                  <div class="owner-badge">
+                    <span class="badge-icon">👤</span>
+                    <span><%= sketch_book.owner_name %></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- スケッチブックの底部情報 -->
+            <div class="cover-bottom">
+              <span class="page-count">📄 <%= sketch_book.pages.count %>p</span>
+              <span class="created-date"><%= sketch_book.created_at.strftime("%Y/%m/%d") %></span>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<style>
+  .archive-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .archive-page-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 30px;
+  }
+
+  .back-to-top {
+    align-self: flex-start;
+    padding: 10px 20px;
+    background: #4ECDC4;
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+    margin-bottom: 15px;
+    font-family: 'Chalkboard SE', 'Comic Sans MS', cursive, sans-serif;
+  }
+
+  .back-to-top:hover {
+    background: #44A08D;
+    transform: translateY(-2px);
+  }
+
+  .page-title {
+    text-align: center;
+    color: #FF6B6B;
+    font-size: 48px;
+    margin: 0;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 16px;
+    margin-bottom: 40px;
+  }
+
+  .empty-message {
+    text-align: center;
+    padding: 60px 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+    margin: 40px auto;
+    max-width: 500px;
+  }
+
+  .empty-message p {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 20px;
+  }
+
+  .start-game-btn {
+    display: inline-block;
+    padding: 15px 40px;
+    background: linear-gradient(145deg, #FF6B6B, #FF4757);
+    color: white;
+    text-decoration: none;
+    border-radius: 30px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .start-game-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .sketch-books-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 40px;
+    margin-top: 20px;
+    padding: 20px;
+  }
+
+  .sketch-book-link {
+    text-decoration: none;
+    color: inherit;
+    display: block;
+    transition: all 0.3s ease;
+  }
+
+  .sketch-book-link:hover .sketch-book-cover {
+    transform: translateY(-8px) rotateX(5deg);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+  }
+
+  .sketch-book-cover {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B5 50%, #FFD89B 100%);
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    border: 3px solid #D4A574;
+    position: relative;
+    height: 320px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 表紙上部（お題エリア） */
+  .cover-top {
+    flex: 1;
+    padding: 25px 20px;
+    background: linear-gradient(180deg, #FFFBF0 0%, #FFF5DC 100%);
+    position: relative;
+  }
+
+  .cover-content {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    height: 100%;
+    justify-content: center;
+  }
+
+  .cover-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #2C1810;
+    text-align: center;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    word-wrap: break-word;
+    line-height: 1.3;
+    text-shadow: 1px 1px 2px rgba(255, 255, 255, 0.8);
+    padding: 0 5px;
+  }
+
+  .cover-subtitle {
+    display: flex;
+    justify-content: center;
+  }
+
+  .owner-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.7);
+    padding: 8px 15px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #555;
+    border: 1px solid #D4A574;
+  }
+
+  .badge-icon {
+    font-size: 16px;
+  }
+
+  /* ページの厚み表現 */
+  .cover-pages {
+    height: 8px;
+    background: linear-gradient(90deg, #E8D4B8 0%, #F5E6D3 50%, #E8D4B8 100%);
+    border-top: 1px solid #C4A574;
+    border-bottom: 1px solid #C4A574;
+    display: flex;
+    position: relative;
+  }
+
+  .page-edge {
+    flex: 1;
+    border-right: 1px solid rgba(196, 165, 116, 0.3);
+    background: linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.05) 50%, transparent 100%);
+  }
+
+  .page-edge:last-child {
+    border-right: none;
+  }
+
+  /* 底部情報 */
+  .cover-bottom {
+    padding: 12px 15px;
+    background: linear-gradient(135deg, #FFE4B5 0%, #FFD89B 100%);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #D4A574;
+  }
+
+  .page-count {
+    font-weight: bold;
+    color: #4ECDC4;
+  }
+
+  .created-date {
+    color: #999;
+    font-size: 11px;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .page-title {
+      font-size: 36px;
+    }
+
+    .back-to-top {
+      font-size: 13px;
+      padding: 8px 16px;
+    }
+
+    .sketch-books-grid {
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 25px;
+      padding: 10px;
+    }
+
+    .sketch-book-cover {
+      height: 280px;
+    }
+
+    .cover-top {
+      padding: 20px 15px;
+    }
+
+    .cover-title {
+      font-size: 18px;
+    }
+
+    .owner-badge {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .cover-bottom {
+      padding: 10px 12px;
+      font-size: 11px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .page-title {
+      font-size: 28px;
+    }
+
+    .back-to-top {
+      font-size: 12px;
+      padding: 6px 14px;
+    }
+
+    .sketch-books-grid {
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 20px;
+    }
+
+    .sketch-book-cover {
+      height: 260px;
+    }
+
+    .cover-title {
+      font-size: 16px;
+    }
+  }
+</style>

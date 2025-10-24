@@ -1,15 +1,32 @@
 class SketchBooksController < ApplicationController
-  before_action :set_current_user
+  before_action :set_current_user, except: [ :index ]
   before_action :set_sketch_book, only: [ :show, :add_page ]
   before_action :set_game, only: [ :show, :add_page ]
 
+  def index
+    # 完成したスケッチブックのみを表示
+    @sketch_books = SketchBook.where(completed: true)
+                              .includes(:prompt, pages: { image_attachment: :blob })
+                              .order(created_at: :desc)
+  end
+
   def show
+    # アーカイブモード：完成済みのスケッチブックを閲覧
+    if @sketch_book.completed?
+      @archive_mode = true
+      @pages = @sketch_book.pages.includes(image_attachment: :blob).order(:page_number)
+      return
+    end
+
+    # ゲームモード：進行中のゲーム
     Rails.logger.info "=== SketchBooksController#show ==="
     Rails.logger.info "User: #{@current_user.name} (#{@current_user.id})"
     Rails.logger.info "Current sketch_book_id: #{@current_user.current_sketch_book_id}"
     Rails.logger.info "Viewing sketch_book_id: #{@sketch_book.id}"
     Rails.logger.info "Game status: #{@game.status}"
     Rails.logger.info "Game turn: #{@game.current_turn}, type: #{@game.turn_type}"
+
+    @archive_mode = false
 
     # ゲームが終了している場合は結果画面にリダイレクト
     if @game.finished? || @game.round_finished?
@@ -68,6 +85,9 @@ class SketchBooksController < ApplicationController
   end
 
   def set_game
+    # 完成済みスケッチブックの場合はゲーム情報不要（アーカイブ閲覧）
+    return if @sketch_book.completed?
+
     @game = Cache::Game.find_by_room(@sketch_book.room_id)
 
     unless @game
