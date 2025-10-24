@@ -35,3 +35,6 @@
 
 /app/assets/builds/*
 !/app/assets/builds/.keep
+
+# Rails::Generatorsがdev環境でないと解決できない
+/lib/generators/*
