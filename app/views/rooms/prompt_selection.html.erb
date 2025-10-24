@@ -54,26 +54,33 @@
 <style>
   .prompt-selection-screen {
     max-width: 1200px;
-    margin: 0 auto;
+    margin: 40px auto;
     padding: 20px;
     text-align: center;
   }
 
   .prompt-selection-screen h1 {
-    color: #333;
-    margin-bottom: 20px;
+    font-size: 48px;
+    color: #FF6B6B;
+    margin-bottom: 30px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .game-info {
-    background: #f8f9fa;
-    padding: 15px;
-    border-radius: 8px;
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B5 100%);
+    padding: 20px;
+    border-radius: 15px;
     margin-bottom: 30px;
+    border: 3px solid #D4A574;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
   .game-info p {
     margin: 5px 0;
-    color: #666;
+    color: #2C1810;
+    font-weight: bold;
+    font-size: 16px;
   }
 
   .prompts-container {
@@ -81,8 +88,10 @@
   }
 
   .prompts-container h2 {
-    color: #495057;
-    margin-bottom: 20px;
+    color: #2C1810;
+    margin-bottom: 25px;
+    font-size: 28px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   }
 
   .prompts-grid {
@@ -94,32 +103,39 @@
   }
 
   .prompt-card {
-    background: white;
-    border: 3px solid #dee2e6;
+    background: linear-gradient(135deg, #FFF 0%, #F8F9FA 100%);
+    border: 3px solid #4ECDC4;
     border-radius: 12px;
     padding: 20px;
     transition: all 0.3s ease;
     cursor: default;
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .prompt-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(78, 205, 196, 0.3);
   }
 
   .prompt-card.selected {
     border-color: #28a745;
-    background: #d4edda;
+    background: linear-gradient(135deg, #D4EDDA 0%, #C3E6CB 100%);
     transform: scale(1.05);
-    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.4);
   }
 
   .prompt-number {
-    font-size: 24px;
+    font-size: 32px;
     font-weight: bold;
-    color: #007bff;
+    color: #FF6B6B;
     margin-bottom: 10px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   }
 
   .prompt-word {
     font-size: 18px;
     color: #333;
-    font-weight: 500;
+    font-weight: 600;
   }
 
   .dice-container {
@@ -161,21 +177,22 @@
   }
 
   .roll-dice-btn {
-    padding: 15px 40px;
-    font-size: 20px;
+    padding: 20px 50px;
+    font-size: 24px;
     font-weight: bold;
-    background: linear-gradient(145deg, #28a745, #20873a);
+    background: linear-gradient(145deg, #FF6B6B, #FF4757);
     color: white;
     border: none;
     border-radius: 30px;
     cursor: pointer;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 6px 16px rgba(255, 107, 107, 0.4);
     transition: all 0.3s ease;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   }
 
   .roll-dice-btn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(255, 107, 107, 0.5);
   }
 
   .roll-dice-btn:active:not(:disabled) {
@@ -183,21 +200,23 @@
   }
 
   .roll-dice-btn:disabled {
-    background: #6c757d;
+    background: #999;
     cursor: not-allowed;
     opacity: 0.6;
+    box-shadow: none;
   }
 
   .waiting-message {
-    font-size: 18px;
-    color: #ff9800;
+    font-size: 24px;
+    color: #FF9800;
     font-weight: bold;
     animation: pulse 2s ease-in-out infinite;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   }
 
   @keyframes pulse {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.6; }
+    50% { opacity: 0.5; }
   }
 
   .result-display {
