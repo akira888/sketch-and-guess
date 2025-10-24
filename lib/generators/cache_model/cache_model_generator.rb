@@ -1,5 +1,6 @@
 # frozen_string_literal: true
 
+require "rails/generators"
 # Generator for CacheModel classes
 #
 # Usage:
