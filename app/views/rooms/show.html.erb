@@ -1,19 +1,30 @@
 <%= turbo_stream_from "room_#{@cache_room.id}" %>
 
 <div class="waiting-room">
-  <h1>ゲームルーム待機画面</h1>
+  <h1 class="page-title">待機中...</h1>
 
-  <div class="room-info">
-    <h2>ルーム情報</h2>
-    <p>ルームID: <%= @cache_room.id %></p>
-    <p id="participant-count">参加人数: <strong><%= @cache_room.entering_count %> / <%= @cache_room.member_limit %></strong></p>
+  <div class="room-info-card">
+    <h2 class="card-title">ルーム情報</h2>
+    <div class="info-content">
+      <div class="info-item">
+        <span class="info-label">ルームID</span>
+        <span class="info-value"><%= @cache_room.id %></span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">参加人数</span>
+        <span class="info-value" id="participant-count"><%= @cache_room.entering_count %> / <%= @cache_room.member_limit %> 人</span>
+      </div>
+    </div>
   </div>
 
-  <div id="participants" class="participants">
-    <h2>参加者一覧</h2>
-    <ul>
+  <div id="participants" class="participants-card">
+    <h2 class="card-title">参加者一覧</h2>
+    <ul class="participants-list">
       <% @cache_room.member_order_array.each do |member| %>
-        <li><%= member["user_name"] %></li>
+        <li class="participant-item">
+          <span class="participant-icon">👤</span>
+          <span class="participant-name"><%= member["user_name"] %></span>
+        </li>
       <% end %>
     </ul>
   </div>
@@ -21,20 +32,29 @@
   <div id="room-status">
     <% if @cache_room.full? %>
       <div class="game-starting">
+        <div class="starting-icon">🎮</div>
         <h2>全員揃いました！</h2>
         <p>ゲームを開始しています...</p>
-        <p>自動的にゲーム画面に移動します</p>
+        <p class="auto-redirect">自動的にゲーム画面に移動します</p>
       </div>
     <% else %>
-      <div class="invitation">
-        <h2>参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください。</h2>
-        <dl>
-          <dt>ユーザー登録URL</dt>
-          <dd><%= link_to user_entry_url(@cache_room.id), user_entry_url(@cache_room.id), target: "_blank" %></dd>
-          <dt>QR code</dt>
-          <dd><%= image_tag qrcode_tag user_entry_url(@cache_room.id) %></dd>
-        </dl>
-        <p class="waiting-message">あと <%= @cache_room.member_limit - @cache_room.entering_count %> 人待っています...</p>
+      <div class="invitation-card">
+        <h2 class="card-title">友達を招待</h2>
+        <p class="invitation-text">参加したいメンバーに以下のURLを伝えるか、QRコードを送ってください</p>
+        <div class="invitation-content">
+          <div class="url-section">
+            <label class="section-label">ユーザー登録URL</label>
+            <%= link_to user_entry_url(@cache_room.id), user_entry_url(@cache_room.id), target: "_blank", class: "invite-link" %>
+          </div>
+          <div class="qr-section">
+            <label class="section-label">QRコード</label>
+            <%= image_tag qrcode_tag(user_entry_url(@cache_room.id)), class: "qr-code" %>
+          </div>
+        </div>
+        <p class="waiting-message">
+          <span class="waiting-icon">⏳</span>
+          あと <strong><%= @cache_room.member_limit - @cache_room.entering_count %></strong> 人待っています...
+        </p>
       </div>
     <% end %>
   </div>
@@ -42,124 +62,241 @@
 
 <style>
   .waiting-room {
-    max-width: 800px;
-    margin: 0 auto;
+    max-width: 900px;
+    margin: 40px auto;
     padding: 20px;
   }
 
-  .waiting-room h1 {
+  .page-title {
     text-align: center;
-    margin-bottom: 30px;
-    color: #333;
+    font-size: 48px;
+    color: #FF6B6B;
+    margin-bottom: 40px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
   }
 
-  .room-info {
-    background: #f8f9fa;
-    padding: 20px;
-    border-radius: 8px;
-    margin-bottom: 20px;
+  .room-info-card {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B5 100%);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    border: 3px solid #D4A574;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   }
 
-  .room-info h2 {
-    margin-top: 0;
-    color: #495057;
+  .card-title {
+    margin: 0 0 20px 0;
+    font-size: 24px;
+    color: #2C1810;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    text-align: center;
   }
 
-  .room-info p {
-    margin: 10px 0;
-    font-size: 16px;
+  .info-content {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
-  .participants {
+  .info-item {
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    border: 2px solid #dee2e6;
-    margin-bottom: 20px;
+    padding: 15px 30px;
+    border-radius: 12px;
+    border: 2px solid #D4A574;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
   }
 
-  .participants h2 {
-    margin-top: 0;
-    color: #495057;
+  .info-label {
+    font-size: 14px;
+    color: #666;
+    font-weight: bold;
   }
 
-  .participants ul {
+  .info-value {
+    font-size: 24px;
+    color: #FF6B6B;
+    font-weight: bold;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+  }
+
+  .participants-card {
+    background: linear-gradient(135deg, #E8F4F8 0%, #D4EDF4 100%);
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+    border: 3px solid #4ECDC4;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .participants-list {
     list-style: none;
     padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 12px;
   }
 
-  .participants li {
-    padding: 10px;
-    margin: 5px 0;
-    background: #f8f9fa;
-    border-radius: 4px;
+  .participant-item {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 25px;
+    border: 2px solid #4ECDC4;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.3s ease;
+  }
+
+  .participant-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(78, 205, 196, 0.3);
+  }
+
+  .participant-icon {
+    font-size: 20px;
+  }
+
+  .participant-name {
     font-size: 16px;
+    font-weight: bold;
+    color: #333;
   }
 
   .game-starting {
     text-align: center;
-    padding: 30px;
-    background: #d4edda;
-    border: 2px solid #c3e6cb;
-    border-radius: 8px;
-    color: #155724;
+    padding: 40px;
+    background: linear-gradient(135deg, #D4EDDA 0%, #C3E6CB 100%);
+    border: 3px solid #28A745;
+    border-radius: 20px;
+    box-shadow: 0 6px 16px rgba(40, 167, 69, 0.3);
+  }
+
+  .starting-icon {
+    font-size: 64px;
+    margin-bottom: 20px;
+    animation: bounce 1s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
   }
 
   .game-starting h2 {
-    margin-top: 0;
-    font-size: 24px;
+    margin: 0 0 15px 0;
+    font-size: 32px;
+    color: #155724;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
   }
 
-  .invitation {
-    padding: 20px;
-    background: white;
-    border-radius: 8px;
-    border: 2px solid #dee2e6;
-  }
-
-  .invitation h2 {
-    margin-top: 0;
-    font-size: 18px;
-    color: #495057;
-  }
-
-  .invitation dl {
-    margin: 20px 0;
-  }
-
-  .invitation dt {
-    font-weight: bold;
-    margin-top: 15px;
-    color: #495057;
-  }
-
-  .invitation dd {
+  .game-starting p {
     margin: 10px 0;
-    word-break: break-all;
+    font-size: 18px;
+    color: #155724;
   }
 
-  .invitation dd a {
-    color: #007bff;
+  .auto-redirect {
+    font-style: italic;
+    color: #28A745 !important;
+  }
+
+  .invitation-card {
+    background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B5 100%);
+    padding: 30px;
+    border-radius: 20px;
+    border: 3px solid #D4A574;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .invitation-text {
+    text-align: center;
+    color: #666;
+    margin-bottom: 25px;
+    font-size: 16px;
+  }
+
+  .invitation-content {
+    display: flex;
+    gap: 30px;
+    margin: 25px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .url-section,
+  .qr-section {
+    flex: 1;
+    min-width: 250px;
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    border: 2px solid #D4A574;
+  }
+
+  .section-label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #2C1810;
+    font-size: 14px;
+  }
+
+  .invite-link {
+    display: block;
+    color: #4ECDC4;
     text-decoration: none;
+    word-break: break-all;
+    font-size: 14px;
+    padding: 10px;
+    background: #F0F8FF;
+    border-radius: 8px;
+    border: 1px dashed #4ECDC4;
   }
 
-  .invitation dd a:hover {
+  .invite-link:hover {
+    background: #E0F0FF;
     text-decoration: underline;
   }
 
-  .invitation dd img {
+  .qr-code {
     max-width: 200px;
     height: auto;
     display: block;
-    margin: 10px 0;
+    margin: 0 auto;
+    border: 3px solid #D4A574;
+    border-radius: 8px;
+    padding: 10px;
+    background: white;
   }
 
   .waiting-message {
     text-align: center;
-    font-size: 18px;
+    font-size: 24px;
     font-weight: bold;
-    color: #ff9800;
-    margin-top: 20px;
+    color: #FF9800;
+    margin-top: 30px;
+    padding: 20px;
+    background: rgba(255, 152, 0, 0.1);
+    border-radius: 15px;
+    border: 2px dashed #FF9800;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+  }
+
+  .waiting-icon {
+    font-size: 28px;
+    display: inline-block;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
   }
 
   /* レスポンシブ対応 */
