@@ -1,4 +1,7 @@
-<%= turbo_stream_from "game_#{@game.room_id}" %>
+<% if @archive_mode %>
+  <%= render 'archive_view' %>
+<% else %>
+  <%= turbo_stream_from "game_#{@game.room_id}" %>
 
 <div class="game-screen">
   <div class="game-header">
@@ -638,3 +641,4 @@ document.addEventListener('turbo:load', initializeDrawingApp);
   }, 5000); // 5秒ごとにチェック
 })();
 </script>
+<% end %>

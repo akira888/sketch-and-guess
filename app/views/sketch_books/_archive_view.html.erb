@@ -1,0 +1,280 @@
+<div class="archive-view">
+  <div class="archive-header">
+    <h1><%= @sketch_book.prompt_text || @sketch_book.prompt&.word || "お題なし" %></h1>
+    <p class="owner-info">オーナー: <%= @sketch_book.owner_name %></p>
+    <p class="created-info">作成日: <%= @sketch_book.created_at.strftime("%Y年%m月%d日") %></p>
+    <%= link_to "← アーカイブに戻る", sketch_books_path, class: "back-link" %>
+  </div>
+
+  <div class="pages-container">
+    <% @pages.each do |page| %>
+      <div class="page">
+        <div class="page-header">
+          <span class="page-number">ページ <%= page.page_number %></span>
+          <span class="page-author">作成者: <%= page.user_name %></span>
+        </div>
+
+        <div class="page-content">
+          <% if page.page_type == "prompt" %>
+            <div class="prompt-page">
+              <h3>お題</h3>
+              <p class="prompt-text"><%= page.content %></p>
+            </div>
+          <% elsif page.page_type == "sketch" && page.image.attached? %>
+            <div class="sketch-page">
+              <%= image_tag page.image, alt: "#{page.user_name}さんの絵" %>
+            </div>
+          <% elsif page.page_type == "text" %>
+            <div class="text-page">
+              <p class="text-answer"><%= page.content %></p>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="comparison">
+    <h3>お題と最終回答の比較</h3>
+    <div class="comparison-container">
+      <div class="original-prompt">
+        <h4>元のお題</h4>
+        <p><%= @pages.first.content %></p>
+      </div>
+      <div class="final-answer">
+        <h4>最終回答</h4>
+        <p><%= @pages.last.content %></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .archive-view {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .archive-header {
+    text-align: center;
+    margin-bottom: 40px;
+    padding-bottom: 20px;
+    border-bottom: 3px solid #FF6B6B;
+  }
+
+  .archive-header h1 {
+    font-size: 36px;
+    color: #FF6B6B;
+    margin-bottom: 10px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+  }
+
+  .owner-info {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+
+  .created-info {
+    font-size: 14px;
+    color: #999;
+    margin-bottom: 15px;
+  }
+
+  .back-link {
+    display: inline-block;
+    padding: 10px 20px;
+    background: #4ECDC4;
+    color: white;
+    text-decoration: none;
+    border-radius: 20px;
+    font-size: 14px;
+    transition: all 0.3s ease;
+  }
+
+  .back-link:hover {
+    background: #44A08D;
+    transform: translateY(-2px);
+  }
+
+  .pages-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .page {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 15px;
+    background: #fafafa;
+  }
+
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+
+  .page-content {
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .prompt-page,
+  .text-page {
+    text-align: center;
+    width: 100%;
+  }
+
+  .prompt-page h3 {
+    font-size: 16px;
+    color: #999;
+    margin-bottom: 10px;
+  }
+
+  .prompt-text,
+  .text-answer {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  .sketch-page {
+    width: 100%;
+  }
+
+  .sketch-page img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ddd;
+  }
+
+  .comparison {
+    background: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    margin-top: 20px;
+  }
+
+  .comparison h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+  }
+
+  .comparison-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin: 20px 0;
+  }
+
+  .original-prompt,
+  .final-answer {
+    padding: 15px;
+    background: white;
+    border-radius: 4px;
+    text-align: center;
+  }
+
+  .original-prompt h4,
+  .final-answer h4 {
+    margin-bottom: 10px;
+    color: #666;
+  }
+
+  .original-prompt p,
+  .final-answer p {
+    font-size: 20px;
+    font-weight: bold;
+    color: #333;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .archive-view {
+      padding: 15px;
+    }
+
+    .archive-header h1 {
+      font-size: 28px;
+    }
+
+    .owner-info {
+      font-size: 16px;
+    }
+
+    .pages-container {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .page {
+      padding: 12px;
+    }
+
+    .page-header {
+      font-size: 12px;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .page-content {
+      min-height: 150px;
+    }
+
+    .prompt-text,
+    .text-answer {
+      font-size: 18px;
+    }
+
+    .comparison {
+      padding: 15px;
+    }
+
+    .comparison h3 {
+      font-size: 18px;
+    }
+
+    .comparison-container {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .original-prompt p,
+    .final-answer p {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .archive-header h1 {
+      font-size: 24px;
+    }
+
+    .page-header {
+      font-size: 11px;
+    }
+
+    .prompt-text,
+    .text-answer {
+      font-size: 16px;
+    }
+
+    .comparison h3 {
+      font-size: 16px;
+    }
+
+    .original-prompt p,
+    .final-answer p {
+      font-size: 14px;
+    }
+  }
+</style>

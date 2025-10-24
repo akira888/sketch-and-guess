@@ -1,6 +1,86 @@
 <div class="main">
   <h1 class="site-title">Sketch & Guess</h1>
+  <p class="tagline">絵しりとり伝言ゲーム</p>
   <div class="actions">
-    <%= link_to '人を集める', new_room_path %>
+    <%= link_to 'ゲームを始める', new_room_path, class: 'btn-primary' %>
+    <%= link_to '過去のスケッチブックを見る', sketch_books_path, class: 'btn-secondary' %>
   </div>
 </div>
+
+<style>
+  .main {
+    max-width: 600px;
+    margin: 60px auto;
+    padding: 40px 20px;
+    text-align: center;
+  }
+
+  .site-title {
+    font-size: 48px;
+    font-family: 'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif;
+    color: #FF6B6B;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .tagline {
+    font-size: 18px;
+    color: #666;
+    margin-bottom: 40px;
+    font-style: italic;
+  }
+
+  .actions {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+
+  .btn-primary, .btn-secondary {
+    display: block;
+    padding: 20px 40px;
+    text-decoration: none;
+    border-radius: 30px;
+    font-size: 20px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary {
+    background: linear-gradient(145deg, #FF6B6B, #FF4757);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(255, 107, 107, 0.4);
+  }
+
+  .btn-secondary {
+    background: linear-gradient(145deg, #4ECDC4, #44A08D);
+    color: white;
+  }
+
+  .btn-secondary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(78, 205, 196, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    .site-title {
+      font-size: 36px;
+    }
+
+    .tagline {
+      font-size: 16px;
+    }
+
+    .btn-primary, .btn-secondary {
+      padding: 15px 30px;
+      font-size: 18px;
+    }
+  }
+</style>
