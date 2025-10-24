@@ -49,9 +49,9 @@
 
       <% elsif @turn_type == "text" %>
         <h2>絵を見て、何が描かれているか答えてください</h2>
-        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post do |f| %>
+        <%= form_with url: add_page_sketch_book_path(@sketch_book), method: :post, id: "text-form" do |f| %>
           <%= f.text_field :content, placeholder: "ここに答えを入力してください", class: "text-input", autofocus: true %>
-          <%= f.submit "回答する", class: "submit-btn" %>
+          <%= f.submit "回答する", class: "submit-btn", id: "submit-text" %>
         <% end %>
       <% end %>
 
@@ -230,6 +230,108 @@
     margin-top: 30px;
     text-align: center;
     color: #666;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .game-screen {
+      padding: 10px;
+    }
+
+    .game-header h1 {
+      font-size: 24px;
+    }
+
+    .game-info {
+      flex-direction: column;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .previous-page {
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .text-content {
+      font-size: 18px;
+      padding: 20px;
+    }
+
+    .canvas-wrapper {
+      max-width: 100%;
+    }
+
+    .canvas-container {
+      padding: 10px;
+    }
+
+    .canvas-tools {
+      padding: 10px;
+      gap: 8px;
+    }
+
+    .tool-btn {
+      padding: 12px 16px;
+      font-size: 14px;
+      min-height: 44px; /* タッチしやすいサイズ */
+    }
+
+    .color-option {
+      width: 40px;
+      height: 40px;
+      border-width: 4px; /* タッチしやすいサイズ */
+    }
+
+    .timer {
+      font-size: 36px;
+      margin: 15px 0;
+    }
+
+    .text-input {
+      width: calc(100% - 20px);
+      font-size: 16px;
+      padding: 12px;
+      margin: 15px 10px;
+    }
+
+    .submit-btn {
+      width: calc(100% - 40px);
+      max-width: 400px;
+      padding: 15px 20px;
+      font-size: 16px;
+      margin: 15px 20px;
+      min-height: 50px; /* タッチしやすいサイズ */
+    }
+
+    .waiting-info {
+      margin-top: 20px;
+      font-size: 14px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .game-header h1 {
+      font-size: 20px;
+    }
+
+    .game-info {
+      font-size: 12px;
+    }
+
+    .text-content {
+      font-size: 16px;
+      padding: 15px;
+    }
+
+    .timer {
+      font-size: 28px;
+    }
+
+    .tool-btn {
+      padding: 10px 12px;
+      font-size: 12px;
+    }
   }
 </style>
 
@@ -447,18 +549,19 @@ function initializeDrawingApp() {
     }, 1000);
   }
 
-  // フォーム送信時に画像データを設定
-  const form = document.getElementById('drawing-form');
-  let isSubmitting = false;
+  // 描画フォーム送信時に画像データを設定
+  const drawingForm = document.getElementById('drawing-form');
+  let isDrawingSubmitting = false;
 
-  form?.addEventListener('submit', (e) => {
+  drawingForm?.addEventListener('submit', (e) => {
     // 二重送信防止
-    if (isSubmitting) {
+    if (isDrawingSubmitting) {
       e.preventDefault();
+      console.log('二重送信を防止しました（描画フォーム）');
       return;
     }
 
-    isSubmitting = true;
+    isDrawingSubmitting = true;
 
     // タイマーを停止
     if (timerInterval) {
@@ -470,6 +573,31 @@ function initializeDrawingApp() {
     document.getElementById('canvas-image-data').value = imageData;
 
     console.log('フォーム送信：画像データを設定しました');
+
+    // Turboでフォームを送信（preventDefaultしない）
+  });
+
+  // テキストフォーム送信時の二重送信防止
+  const textForm = document.getElementById('text-form');
+  let isTextSubmitting = false;
+
+  textForm?.addEventListener('submit', (e) => {
+    // 二重送信防止
+    if (isTextSubmitting) {
+      e.preventDefault();
+      console.log('二重送信を防止しました（テキストフォーム）');
+      return;
+    }
+
+    isTextSubmitting = true;
+    console.log('テキストフォーム送信');
+
+    // 送信ボタンを無効化
+    const submitButton = document.getElementById('submit-text');
+    if (submitButton) {
+      submitButton.disabled = true;
+      submitButton.textContent = '送信中...';
+    }
 
     // Turboでフォームを送信（preventDefaultしない）
   });
@@ -490,6 +618,13 @@ document.addEventListener('turbo:load', initializeDrawingApp);
     fetch('/rooms/' + roomId + '/game_next_turn')
       .then(response => response.json())
       .then(data => {
+        // ゲームが終了している場合は結果画面へ
+        if (data.game_finished) {
+          console.log('ゲームが終了しました。結果画面に移動します。');
+          window.location.href = data.results_url;
+          return;
+        }
+
         // 自分のcurrent_sketch_book_idが変わっていたらリロード
         const currentPath = window.location.pathname;
         const expectedPath = data.sketch_book_url;

@@ -52,7 +52,7 @@ class CacheModel
   # @param key [String] cache key or ID
   # @return [CacheModel, nil] found instance or nil
   def self.find(key)
-    cache_key = key.start_with?("#{cache_key_prefix}:") ? key : build_cache_key(key)
+    cache_key = key&.start_with?("#{cache_key_prefix}:") ? key : build_cache_key(key)
     data = Rails.cache.read(cache_key)
     return nil unless data
 

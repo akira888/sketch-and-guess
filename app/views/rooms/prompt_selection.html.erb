@@ -1,0 +1,698 @@
+<%= turbo_stream_from "room_#{@cache_room.id}_dice" %>
+
+<div class="prompt-selection-screen">
+  <h1>お題選択</h1>
+
+  <div class="game-info">
+    <p>ルームID: <%= @cache_room.id %></p>
+    <p>参加人数: <%= @cache_room.entering_count %>人</p>
+  </div>
+
+  <div class="prompts-container">
+    <h2>あなたのお題候補</h2>
+    <div class="prompts-grid">
+      <% @prompts.each do |prompt| %>
+        <div class="prompt-card" data-order="<%= prompt.order %>">
+          <div class="prompt-number"><%= prompt.order %></div>
+          <div class="prompt-word"><%= prompt.word %></div>
+        </div>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="dice-container">
+    <div id="dice-display" class="dice-display">
+      <div class="dice-face">?</div>
+    </div>
+
+    <% if @is_room_creator %>
+      <button id="roll-dice-btn" class="roll-dice-btn">
+        ダイスを振る
+      </button>
+    <% else %>
+      <p class="waiting-message">ルーム作成者がダイスを振るのを待っています...</p>
+    <% end %>
+  </div>
+
+  <div id="result-display" class="result-display" style="display: none;">
+    <h2>ダイスの結果</h2>
+    <div class="result-number"></div>
+    <div class="result-message"></div>
+  </div>
+
+  <div id="free-prompt-input" class="free-prompt-input" style="display: none;">
+    <h2>お題を入力してください</h2>
+    <div class="free-prompt-genre"></div>
+    <form id="free-prompt-form">
+      <input type="text" id="free-prompt-text" class="free-prompt-text-input" placeholder="お題を入力..." maxlength="50" required>
+      <button type="submit" class="submit-prompt-btn">決定</button>
+    </form>
+    <p class="free-prompt-hint">あなたのスケッチブックのお題になります</p>
+  </div>
+</div>
+
+<style>
+  .prompt-selection-screen {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .prompt-selection-screen h1 {
+    color: #333;
+    margin-bottom: 20px;
+  }
+
+  .game-info {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+  }
+
+  .game-info p {
+    margin: 5px 0;
+    color: #666;
+  }
+
+  .prompts-container {
+    margin-bottom: 40px;
+  }
+
+  .prompts-container h2 {
+    color: #495057;
+    margin-bottom: 20px;
+  }
+
+  .prompts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin: 0 auto;
+    max-width: 900px;
+  }
+
+  .prompt-card {
+    background: white;
+    border: 3px solid #dee2e6;
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: default;
+  }
+
+  .prompt-card.selected {
+    border-color: #28a745;
+    background: #d4edda;
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+  }
+
+  .prompt-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+    margin-bottom: 10px;
+  }
+
+  .prompt-word {
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
+  }
+
+  .dice-container {
+    margin: 40px 0;
+  }
+
+  .dice-display {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 30px;
+    perspective: 1000px;
+  }
+
+  .dice-face {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(145deg, #ffffff, #e6e6e6);
+    border: 3px solid #333;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 60px;
+    font-weight: bold;
+    color: #333;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s ease;
+  }
+
+  .dice-face.rolling {
+    animation: diceRoll 0.5s ease-in-out infinite;
+  }
+
+  @keyframes diceRoll {
+    0%, 100% { transform: rotateX(0deg) rotateY(0deg); }
+    25% { transform: rotateX(180deg) rotateY(0deg); }
+    50% { transform: rotateX(180deg) rotateY(180deg); }
+    75% { transform: rotateX(0deg) rotateY(180deg); }
+  }
+
+  .roll-dice-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #28a745, #20873a);
+    color: white;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .roll-dice-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .roll-dice-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .roll-dice-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .waiting-message {
+    font-size: 18px;
+    color: #ff9800;
+    font-weight: bold;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  .result-display {
+    margin-top: 40px;
+    padding: 30px;
+    background: #d4edda;
+    border: 3px solid #28a745;
+    border-radius: 12px;
+  }
+
+  .result-display h2 {
+    color: #155724;
+    margin-bottom: 20px;
+  }
+
+  .result-number {
+    font-size: 72px;
+    font-weight: bold;
+    color: #28a745;
+    margin-bottom: 20px;
+  }
+
+  .result-message {
+    font-size: 24px;
+    color: #155724;
+    font-weight: bold;
+    line-height: 1.6;
+  }
+
+  .highlight-prompt {
+    font-size: 32px;
+    color: #28a745;
+    background: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    display: inline-block;
+    margin: 10px 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .countdown {
+    margin-top: 20px;
+    font-size: 20px;
+    color: #666;
+    font-weight: normal;
+  }
+
+  .free-prompt-input {
+    margin-top: 40px;
+    padding: 30px;
+    background: #fff3cd;
+    border: 3px solid #ffc107;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .free-prompt-input h2 {
+    color: #856404;
+    margin-bottom: 20px;
+  }
+
+  .free-prompt-genre {
+    font-size: 18px;
+    color: #856404;
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+
+  .free-prompt-text-input {
+    width: 100%;
+    max-width: 400px;
+    padding: 15px;
+    font-size: 18px;
+    border: 2px solid #ffc107;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    text-align: center;
+  }
+
+  .free-prompt-text-input:focus {
+    outline: none;
+    border-color: #ff9800;
+    box-shadow: 0 0 0 3px rgba(255, 152, 0, 0.2);
+  }
+
+  .submit-prompt-btn {
+    padding: 15px 40px;
+    font-size: 20px;
+    font-weight: bold;
+    background: linear-gradient(145deg, #ffc107, #ff9800);
+    color: #333;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
+  }
+
+  .submit-prompt-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  }
+
+  .submit-prompt-btn:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .submit-prompt-btn:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  .free-prompt-hint {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #856404;
+    font-style: italic;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .prompt-selection-screen {
+      padding: 15px;
+    }
+
+    .prompts-grid {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+    }
+
+    .prompt-card {
+      padding: 15px;
+    }
+
+    .prompt-number {
+      font-size: 20px;
+    }
+
+    .prompt-word {
+      font-size: 16px;
+    }
+
+    .dice-display {
+      width: 100px;
+      height: 100px;
+    }
+
+    .dice-face {
+      font-size: 50px;
+    }
+
+    .roll-dice-btn {
+      padding: 12px 30px;
+      font-size: 18px;
+    }
+
+    .result-number {
+      font-size: 60px;
+    }
+
+    .result-message {
+      font-size: 20px;
+    }
+  }
+</style>
+
+<script>
+(function() {
+  const roomId = '<%= @cache_room.id %>';
+  const isRoomCreator = <%= @is_room_creator %>;
+  const rollDiceBtn = document.getElementById('roll-dice-btn');
+  const diceFace = document.querySelector('.dice-face');
+  const resultDisplay = document.getElementById('result-display');
+  const freePromptInput = document.getElementById('free-prompt-input');
+  const freePromptForm = document.getElementById('free-prompt-form');
+  const freePromptGenre = document.querySelector('.free-prompt-genre');
+
+  let isRolling = false;
+  let currentDiceResult = null;
+
+  // お題データ（サーバーから渡される）
+  const prompts = <%= raw @prompts.map { |p| { order: p.order, word: p.word } }.to_json %>;
+
+  // 指定されたorderのお題がFREEかチェック
+  function isPromptFree(order) {
+    const prompt = prompts.find(p => p.order === order);
+    return prompt && (prompt.word === 'FREE' || prompt.word.startsWith('FREE:') || prompt.word.startsWith('FREE_CHOICE:'));
+  }
+
+  // FREEお題のジャンルを取得
+  function getPromptGenre(order) {
+    const prompt = prompts.find(p => p.order === order);
+    if (prompt && (prompt.word.startsWith('FREE:') || prompt.word.startsWith('FREE_CHOICE:'))) {
+      return prompt.word.split(':')[1];
+    }
+    return null;
+  }
+
+  // ダイスボタンクリックイベント
+  if (rollDiceBtn) {
+    rollDiceBtn.addEventListener('click', () => {
+      if (isRolling) return;
+
+      isRolling = true;
+      rollDiceBtn.disabled = true;
+      rollDiceBtn.textContent = 'ダイスを振っています...';
+
+      // ダイス回転アニメーション開始
+      diceFace.classList.add('rolling');
+
+      // ランダムな数字を高速で表示
+      let count = 0;
+      const interval = setInterval(() => {
+        diceFace.textContent = Math.floor(Math.random() * 6) + 1;
+        count++;
+        if (count > 20) {
+          clearInterval(interval);
+        }
+      }, 50);
+
+      // サーバーにダイス振るリクエスト
+      fetch(`/rooms/${roomId}/roll_dice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('Dice rolled:', data.dice_result);
+          currentDiceResult = data.dice_result;
+          // 結果を表示（各ユーザーが自分のお題をチェック）
+          showDiceResult(data.dice_result);
+        } else {
+          alert(data.error || 'エラーが発生しました');
+          resetDiceButton();
+        }
+      })
+      .catch(error => {
+        console.error('Error rolling dice:', error);
+        alert('ダイスを振るのに失敗しました');
+        resetDiceButton();
+      });
+    });
+  }
+
+  // FREEお題の入力フォームを表示
+  function showFreePromptInput(diceResult, genre) {
+    console.log('Showing FREE prompt input:', diceResult, genre);
+
+    // ポーリングを停止
+    if (window.promptSelectionPolling) {
+      clearInterval(window.promptSelectionPolling);
+    }
+
+    setTimeout(() => {
+      // アニメーション停止
+      diceFace.classList.remove('rolling');
+      diceFace.textContent = diceResult;
+
+      // 該当するお題カードをハイライト
+      const selectedCard = document.querySelector(`.prompt-card[data-order="${diceResult}"]`);
+      if (selectedCard) {
+        selectedCard.classList.add('selected');
+      }
+
+      // 入力フォームを表示
+      setTimeout(() => {
+        if (genre) {
+          freePromptGenre.textContent = `「${genre}」に関するお題を入力してください`;
+        } else {
+          freePromptGenre.textContent = '自由にお題を入力してください';
+        }
+        freePromptInput.style.display = 'block';
+        document.getElementById('free-prompt-text').focus();
+      }, 500);
+    }, 1500);
+  }
+
+  // FREEお題フォームの送信処理
+  if (freePromptForm) {
+    freePromptForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+
+      const promptText = document.getElementById('free-prompt-text').value.trim();
+      if (!promptText) {
+        alert('お題を入力してください');
+        return;
+      }
+
+      const submitBtn = freePromptForm.querySelector('.submit-prompt-btn');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '送信中...';
+
+      fetch(`/rooms/${roomId}/submit_free_prompt`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        },
+        body: JSON.stringify({ prompt_text: promptText })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          console.log('FREE prompt submitted:', data.prompt_text);
+          showPromptConfirmation(data.prompt_text);
+        } else {
+          alert(data.error || 'エラーが発生しました');
+          submitBtn.disabled = false;
+          submitBtn.textContent = '決定';
+        }
+      })
+      .catch(error => {
+        console.error('Error submitting prompt:', error);
+        alert('お題の送信に失敗しました');
+        submitBtn.disabled = false;
+        submitBtn.textContent = '決定';
+      });
+    });
+  }
+
+  // お題確定後の表示（FREE入力完了後）
+  function showPromptConfirmation(promptText) {
+    freePromptInput.style.display = 'none';
+
+    const resultNumber = resultDisplay.querySelector('.result-number');
+    const resultMessage = resultDisplay.querySelector('.result-message');
+
+    resultNumber.textContent = currentDiceResult;
+    resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${promptText}</span><br>に決まりました！`;
+
+    resultDisplay.style.display = 'block';
+
+    // 待機メッセージ（他のプレイヤーの準備待ち）
+    const waitingEl = document.createElement('div');
+    waitingEl.className = 'countdown';
+    waitingEl.textContent = '他のプレイヤーの準備を待っています...';
+    resultDisplay.appendChild(waitingEl);
+
+    // 全員の準備完了を待つ
+    waitForAllPlayersReady(waitingEl);
+  }
+
+  // ダイス結果を表示する関数
+  function showDiceResult(result) {
+    console.log('Showing dice result:', result);
+
+    // ポーリングを停止（結果表示を優先）
+    if (window.promptSelectionPolling) {
+      clearInterval(window.promptSelectionPolling);
+      console.log('Polling stopped to show dice result');
+    }
+
+    setTimeout(() => {
+      // アニメーション停止
+      diceFace.classList.remove('rolling');
+      diceFace.textContent = result;
+
+      // 該当するお題をハイライト
+      const selectedCard = document.querySelector(`.prompt-card[data-order="${result}"]`);
+      if (selectedCard) {
+        selectedCard.classList.add('selected');
+
+        // 結果表示
+        setTimeout(() => {
+          const selectedWord = selectedCard.querySelector('.prompt-word').textContent;
+
+          // 自分のお題がFREEかチェック
+          if (isPromptFree(result)) {
+            // FREEの場合は入力フォームを表示
+            const genre = getPromptGenre(result);
+            if (genre) {
+              freePromptGenre.textContent = `「${genre}」に関するお題を入力してください`;
+            } else {
+              freePromptGenre.textContent = '自由にお題を入力してください';
+            }
+            freePromptInput.style.display = 'block';
+            document.getElementById('free-prompt-text').focus();
+          } else {
+            // 通常のお題の場合は結果を表示してから、全員の準備を待つ
+            const resultNumber = resultDisplay.querySelector('.result-number');
+            const resultMessage = resultDisplay.querySelector('.result-message');
+
+            resultNumber.textContent = result;
+            resultMessage.innerHTML = `あなたのお題は<br><span class="highlight-prompt">${selectedWord}</span><br>に決まりました！`;
+
+            resultDisplay.style.display = 'block';
+
+            // 待機メッセージ（他のプレイヤーのFREE入力待ち）
+            const waitingEl = document.createElement('div');
+            waitingEl.className = 'countdown';
+            waitingEl.textContent = '他のプレイヤーのお題入力を待っています...';
+            resultDisplay.appendChild(waitingEl);
+
+            // 全員の準備完了を待つポーリング
+            waitForAllPlayersReady(waitingEl);
+          }
+        }, 500);
+      }
+    }, 1500); // 1.5秒間アニメーション
+  }
+
+  // 全員の準備完了を待つ関数
+  function waitForAllPlayersReady(waitingEl) {
+    const checkInterval = setInterval(() => {
+      fetch(`/rooms/${roomId}/game_redirect`, {
+        headers: {
+          'Accept': 'application/json'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.all_ready) {
+          clearInterval(checkInterval);
+          // 全員準備完了、カウントダウン開始
+          waitingEl.textContent = '全員準備完了！';
+          setTimeout(() => {
+            startGameCountdown(waitingEl);
+          }, 500);
+        }
+      })
+      .catch(err => console.error('Ready check failed:', err));
+    }, 1000); // 1秒ごとにチェック
+  }
+
+  // ゲーム開始カウントダウン
+  function startGameCountdown(countdownEl) {
+    let countdown = 3;
+    countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+
+    const countdownInterval = setInterval(() => {
+      countdown--;
+      if (countdown > 0) {
+        countdownEl.textContent = `${countdown}秒後にゲーム開始...`;
+      } else {
+        clearInterval(countdownInterval);
+        countdownEl.textContent = 'ゲームを開始します！';
+        setTimeout(() => {
+          window.location.href = `/rooms/${roomId}`;
+        }, 500);
+      }
+    }, 1000);
+  }
+
+  // ブロードキャスト経由でのダイス結果も処理（他のプレイヤー用）
+  document.addEventListener('diceRolled', (event) => {
+    const result = event.detail.result;
+    console.log('Dice result received via broadcast:', result);
+    currentDiceResult = result;
+    showDiceResult(result);
+  });
+
+  function resetDiceButton() {
+    diceFace.classList.remove('rolling');
+    diceFace.textContent = '?';
+    if (rollDiceBtn) {
+      rollDiceBtn.disabled = false;
+      rollDiceBtn.textContent = 'ダイスを振る';
+    }
+    isRolling = false;
+  }
+
+  // ポーリング：ダイスが振られたかチェック（ブロードキャストのバックアップ）
+  // window.に保存して、showDiceResult から停止できるようにする
+  let diceResultShown = false; // ダイス結果を表示したかフラグ
+
+  window.promptSelectionPolling = setInterval(() => {
+    fetch(`/rooms/${roomId}/game_redirect`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // ダイスが振られて結果がある場合
+      if (data.dice_result && !diceResultShown) {
+        console.log('ダイス結果を検出（ポーリング）:', data.dice_result);
+        diceResultShown = true;
+        currentDiceResult = data.dice_result;
+        showDiceResult(data.dice_result);
+        return;
+      }
+
+      // ゲームが開始されていて、既に結果を表示済みの場合は即座にリダイレクト
+      if (data.game_status === 'in_progress' && data.sketch_book_url && diceResultShown) {
+        console.log('ゲームが開始されました（ポーリング検出）');
+        clearInterval(window.promptSelectionPolling);
+        window.location.href = data.sketch_book_url;
+      }
+    })
+    .catch(err => console.error('Polling failed:', err));
+  }, 2000); // 2秒ごと
+})();
+</script>

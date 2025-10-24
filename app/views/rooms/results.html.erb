@@ -218,4 +218,119 @@
   .btn:hover {
     background: #0056b3;
   }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .results-screen {
+      padding: 15px;
+    }
+
+    .results-screen h1 {
+      font-size: 24px;
+    }
+
+    .game-summary {
+      padding: 15px;
+      margin-bottom: 20px;
+    }
+
+    .game-summary p {
+      font-size: 14px;
+    }
+
+    .sketch-book {
+      padding: 15px;
+      margin-bottom: 30px;
+    }
+
+    .sketch-book h2 {
+      font-size: 18px;
+    }
+
+    .pages-container {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .page {
+      padding: 12px;
+    }
+
+    .page-header {
+      font-size: 12px;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .page-content {
+      min-height: 150px;
+    }
+
+    .prompt-text,
+    .text-answer {
+      font-size: 18px;
+    }
+
+    .comparison {
+      padding: 15px;
+    }
+
+    .comparison h3 {
+      font-size: 18px;
+    }
+
+    .comparison-container {
+      grid-template-columns: 1fr;
+      gap: 15px;
+    }
+
+    .original-prompt p,
+    .final-answer p {
+      font-size: 16px;
+    }
+
+    .match-result {
+      font-size: 18px;
+      padding: 12px;
+    }
+
+    .btn {
+      width: 100%;
+      max-width: 300px;
+      padding: 12px 20px;
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .results-screen h1 {
+      font-size: 20px;
+    }
+
+    .sketch-book h2 {
+      font-size: 16px;
+    }
+
+    .page-header {
+      font-size: 11px;
+    }
+
+    .prompt-text,
+    .text-answer {
+      font-size: 16px;
+    }
+
+    .comparison h3 {
+      font-size: 16px;
+    }
+
+    .original-prompt p,
+    .final-answer p {
+      font-size: 14px;
+    }
+
+    .match-result {
+      font-size: 16px;
+    }
+  }
 </style>

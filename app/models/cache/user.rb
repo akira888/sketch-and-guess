@@ -4,6 +4,7 @@ class Cache::User < CacheModel
   attribute :room_id, :string
   attribute :sketch_book_id, :integer # 自分のスケッチブックID（永続化されたSketchBook）
   attribute :current_sketch_book_id, :integer # 現在持っているスケッチブックID（オプション）
+  attribute :assigned_card_num, :integer # お題選択フェーズで割り当てられたカード番号
 
   # Validations
   validates :name, presence: true

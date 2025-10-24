@@ -18,6 +18,15 @@ class Prompt < ApplicationRecord
 
   # Instance methods
   def free_input?
-    word == "FREE"
+    word == "FREE" || word.start_with?("FREE:") || word.start_with?("FREE_CHOICE:")
+  end
+
+  def free_with_genre?
+    word.start_with?("FREE:") || word.start_with?("FREE_CHOICE:")
+  end
+
+  def genre
+    return nil unless free_with_genre?
+    word.split(":", 2).last
   end
 end

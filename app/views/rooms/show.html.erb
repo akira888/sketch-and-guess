@@ -7,7 +7,6 @@
     <h2>ルーム情報</h2>
     <p>ルームID: <%= @cache_room.id %></p>
     <p id="participant-count">参加人数: <strong><%= @cache_room.entering_count %> / <%= @cache_room.member_limit %></strong></p>
-    <p>ラウンド数: <%= @cache_room.total_round %></p>
   </div>
 
   <div id="participants" class="participants">
@@ -40,3 +39,246 @@
     <% end %>
   </div>
 </div>
+
+<style>
+  .waiting-room {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+
+  .waiting-room h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #333;
+  }
+
+  .room-info {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+  }
+
+  .room-info h2 {
+    margin-top: 0;
+    color: #495057;
+  }
+
+  .room-info p {
+    margin: 10px 0;
+    font-size: 16px;
+  }
+
+  .participants {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+    margin-bottom: 20px;
+  }
+
+  .participants h2 {
+    margin-top: 0;
+    color: #495057;
+  }
+
+  .participants ul {
+    list-style: none;
+    padding: 0;
+  }
+
+  .participants li {
+    padding: 10px;
+    margin: 5px 0;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+
+  .game-starting {
+    text-align: center;
+    padding: 30px;
+    background: #d4edda;
+    border: 2px solid #c3e6cb;
+    border-radius: 8px;
+    color: #155724;
+  }
+
+  .game-starting h2 {
+    margin-top: 0;
+    font-size: 24px;
+  }
+
+  .invitation {
+    padding: 20px;
+    background: white;
+    border-radius: 8px;
+    border: 2px solid #dee2e6;
+  }
+
+  .invitation h2 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #495057;
+  }
+
+  .invitation dl {
+    margin: 20px 0;
+  }
+
+  .invitation dt {
+    font-weight: bold;
+    margin-top: 15px;
+    color: #495057;
+  }
+
+  .invitation dd {
+    margin: 10px 0;
+    word-break: break-all;
+  }
+
+  .invitation dd a {
+    color: #007bff;
+    text-decoration: none;
+  }
+
+  .invitation dd a:hover {
+    text-decoration: underline;
+  }
+
+  .invitation dd img {
+    max-width: 200px;
+    height: auto;
+    display: block;
+    margin: 10px 0;
+  }
+
+  .waiting-message {
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    color: #ff9800;
+    margin-top: 20px;
+  }
+
+  /* レスポンシブ対応 */
+  @media (max-width: 768px) {
+    .waiting-room {
+      padding: 15px;
+    }
+
+    .waiting-room h1 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .room-info {
+      padding: 15px;
+    }
+
+    .room-info h2 {
+      font-size: 18px;
+    }
+
+    .room-info p {
+      font-size: 14px;
+    }
+
+    .participants {
+      padding: 15px;
+    }
+
+    .participants h2 {
+      font-size: 18px;
+    }
+
+    .participants li {
+      padding: 8px;
+      font-size: 14px;
+    }
+
+    .game-starting {
+      padding: 20px;
+    }
+
+    .game-starting h2 {
+      font-size: 20px;
+    }
+
+    .game-starting p {
+      font-size: 14px;
+    }
+
+    .invitation {
+      padding: 15px;
+    }
+
+    .invitation h2 {
+      font-size: 16px;
+    }
+
+    .invitation dd img {
+      max-width: 150px;
+    }
+
+    .waiting-message {
+      font-size: 16px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .waiting-room h1 {
+      font-size: 20px;
+    }
+
+    .room-info h2,
+    .participants h2 {
+      font-size: 16px;
+    }
+
+    .game-starting h2 {
+      font-size: 18px;
+    }
+
+    .invitation h2 {
+      font-size: 14px;
+    }
+
+    .waiting-message {
+      font-size: 14px;
+    }
+  }
+</style>
+
+<script>
+// ゲーム状態の定期チェック
+(function() {
+  const roomId = '<%= @cache_room.id %>';
+
+  // 2秒ごとにゲーム状態をチェック
+  const checkInterval = setInterval(() => {
+    fetch(`/rooms/${roomId}/game_redirect`, {
+      headers: {
+        'Accept': 'application/json'
+      }
+    })
+    .then(response => response.json())
+    .then(data => {
+      // お題選択フェーズに移行したかチェック
+      if (data.game_status === 'prompt_selection') {
+        console.log('お題選択フェーズに移行しました');
+        clearInterval(checkInterval);
+        window.location.href = `/rooms/${roomId}/prompt_selection`;
+      }
+      // ゲームが開始されたかチェック
+      else if (data.sketch_book_url) {
+        console.log('ゲームが開始されました');
+        clearInterval(checkInterval);
+        window.location.href = data.sketch_book_url;
+      }
+    })
+    .catch(err => console.error('Status check failed:', err));
+  }, 2000);
+})();
+</script>

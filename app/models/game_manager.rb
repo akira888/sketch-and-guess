@@ -5,7 +5,7 @@ class GameManager
     @room = room
   end
 
-  # ゲーム開始処理
+  # ゲーム開始処理（旧バージョン：互換性のため残す）
   def start_game!
     raise "ルームが満員ではありません" unless room.full?
 
@@ -23,6 +23,86 @@ class GameManager
       # 4. Cache::Userのcurrent_sketch_book_idを設定
       update_user_sketch_books(game, sketch_books)
 
+      game
+    end
+  end
+
+  # お題選択フェーズの準備
+  def prepare_prompt_selection!
+    raise "ルームが満員ではありません" unless room.full?
+
+    member_order = room.member_order_array
+    player_count = member_order.size
+
+    # プレイヤー数分の異なるcard_numを選択
+    available_card_nums = Prompt.distinct.pluck(:card_num)
+    selected_card_nums = available_card_nums.sample(player_count)
+
+    # 各ユーザーにcard_numを割り当て
+    member_order.each_with_index do |member, index|
+      user = Cache::User.find(member["user_id"])
+      if user
+        user.assigned_card_num = selected_card_nums[index]
+        user.save!
+        Rails.logger.info "Assigned card_num #{selected_card_nums[index]} to user #{user.name}"
+      end
+    end
+
+    # Cache::Gameを "prompt_selection" ステータスで作成
+    game = Cache::Game.new(
+      id: room.id,
+      room_id: room.id,
+      current_turn: 1, # お題選択フェーズ
+      turn_type: "sketch",
+      turn_started_at: Time.current,
+      current_round: 1,
+      status: "prompt_selection",
+      sketch_book_holders: {}.to_json # まだスケッチブックは作成されていない
+    )
+    game.save!
+
+    Rails.logger.info "Prepared prompt selection phase for room #{room.id}"
+    game
+  end
+
+  # ダイス結果を元にゲームを開始
+  def finalize_game_start!(dice_result)
+    raise "ダイスの目は1-6である必要があります" unless (1..6).include?(dice_result)
+
+    game = Cache::Game.find_by_room(room.id)
+    raise "ゲームが見つかりません" unless game
+    raise "ゲームはprompt_selectionステータスである必要があります" unless game.prompt_selection?
+
+    ActiveRecord::Base.transaction do
+      # ダイス結果を保存
+      game.dice_result = dice_result
+      game.save!
+
+      # 各ユーザーのお題を確定
+      prompts_by_user = {}
+      room.member_order_array.each do |member|
+        user = Cache::User.find(member["user_id"])
+        next unless user&.assigned_card_num
+
+        prompt = Prompt.find_by_card_and_order(user.assigned_card_num, dice_result)
+        unless prompt
+          raise "お題が見つかりません (card_num: #{user.assigned_card_num}, order: #{dice_result})"
+        end
+
+        prompts_by_user[member] = prompt
+        Rails.logger.info "User #{user.name}: card_num #{user.assigned_card_num}, dice #{dice_result} -> #{prompt.word}"
+      end
+
+      # スケッチブックの作成
+      sketch_books = create_sketch_books(prompts_by_user)
+
+      # ゲームの状態を更新
+      update_game_for_start(game, sketch_books)
+
+      # ユーザーのcurrent_sketch_book_idを設定
+      update_user_sketch_books(game, sketch_books)
+
+      Rails.logger.info "Finalized game start for room #{room.id} with dice result #{dice_result}"
       game
     end
   end
@@ -73,12 +153,13 @@ class GameManager
         room_id: room.id,
         owner_name: user_name,
         prompt_id: prompt.id,
+        prompt_text: prompt.word, # 初期値としてprompt.wordを設定（FREEの場合は後で更新）
         round: current_round,
         completed: false
       )
 
       # 1ページ目（promptページ）を作成
-      create_prompt_page(sketch_book, user_name, prompt)
+      create_prompt_page(sketch_book, user_name, prompt.word)
 
       # スケッチブックとユーザーの関連付けを保存
       sketch_books << { sketch_book: sketch_book, user_id: user_id, user_name: user_name }
@@ -88,12 +169,12 @@ class GameManager
   end
 
   # 1ページ目（お題ページ）を作成
-  def create_prompt_page(sketch_book, user_name, prompt)
+  def create_prompt_page(sketch_book, user_name, prompt_text)
     Page.create!(
       sketch_book_id: sketch_book.id,
       page_number: 1,
       page_type: "prompt",
-      content: prompt.word,
+      content: prompt_text,
       user_name: user_name
     )
   end
@@ -137,6 +218,39 @@ class GameManager
     game.save!
 
     game
+  end
+
+  # 既存のCache::Gameをゲーム開始用に更新
+  def update_game_for_start(game, sketch_books)
+    # 偶数人か奇数人かで初期ターンが異なる
+    member_names = room.member_names
+    player_count = member_names.size
+    is_even = player_count.even?
+
+    # sketch_book_holdersの初期設定
+    holders = {}
+    sketch_books.each do |sb_info|
+      book = sb_info[:sketch_book]
+      user_name = sb_info[:user_name]
+
+      # 偶数人: 最初は自分が持つ
+      # 奇数人: 最初から隣に渡す
+      if is_even
+        holders[book.id.to_s] = user_name
+      else
+        # 隣の人に渡す
+        current_index = member_names.index(user_name)
+        next_index = (current_index + 1) % member_names.length
+        holders[book.id.to_s] = member_names[next_index]
+      end
+    end
+
+    # ゲームの状態を更新
+    game.current_turn = 2 # ターン2から開始（ターン1はお題選択フェーズ）
+    game.turn_type = "sketch"
+    game.status = "in_progress"
+    game.sketch_book_holders = holders.to_json
+    game.save!
   end
 
   # Cache::Userにスケッチブックを割り当て

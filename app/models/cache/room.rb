@@ -1,10 +1,10 @@
 class Cache::Room < CacheModel
   # 人数制限
   attribute :member_limit, :integer
-  # ゲームラウンド数
-  attribute :total_round, :integer
+  # ゲームラウンド数(今は1固定)
+  attribute :total_round, :integer, default: 1
   # 登録人数
-  attribute :entering_count, :integer
+  attribute :entering_count, :integer, default: 0
   # メンバーの順序（スケッチブックを渡す順番）
   attribute :member_order, :string # JSON string: ["Alice", "Bob", "Carol", "Dave"]
 

@@ -8,7 +8,14 @@ class SketchBooksController < ApplicationController
     Rails.logger.info "User: #{@current_user.name} (#{@current_user.id})"
     Rails.logger.info "Current sketch_book_id: #{@current_user.current_sketch_book_id}"
     Rails.logger.info "Viewing sketch_book_id: #{@sketch_book.id}"
+    Rails.logger.info "Game status: #{@game.status}"
     Rails.logger.info "Game turn: #{@game.current_turn}, type: #{@game.turn_type}"
+
+    # ゲームが終了している場合は結果画面にリダイレクト
+    if @game.finished? || @game.round_finished?
+      Rails.logger.info "Game finished, redirecting to results"
+      redirect_to results_room_path(@game.room_id) and return
+    end
 
     # ユーザーが正しいスケッチブックを見ているかチェック
     if @current_user.current_sketch_book_id && @current_user.current_sketch_book_id != @sketch_book.id
@@ -78,6 +85,18 @@ class SketchBooksController < ApplicationController
       redirect_to sketch_book_path(@sketch_book) and return
     end
 
+    # 二重送信チェック：このユーザーが現在のターンで既にページを追加していないかチェック
+    existing_page = @sketch_book.pages.find_by(
+      user_name: @current_user.name,
+      page_number: @game.current_turn
+    )
+
+    if existing_page
+      Rails.logger.warn "User #{@current_user.name} tried to submit duplicate page for turn #{@game.current_turn}"
+      flash[:notice] = "既にこのターンの回答を送信済みです"
+      redirect_to sketch_book_path(@sketch_book) and return
+    end
+
     # Base64データをデコードしてファイルに変換
     begin
       # "data:image/png;base64," の部分を削除
@@ -119,6 +138,18 @@ class SketchBooksController < ApplicationController
       redirect_to sketch_book_path(@sketch_book) and return
     end
 
+    # 二重送信チェック：このユーザーが現在のターンで既にページを追加していないかチェック
+    existing_page = @sketch_book.pages.find_by(
+      user_name: @current_user.name,
+      page_number: @game.current_turn
+    )
+
+    if existing_page
+      Rails.logger.warn "User #{@current_user.name} tried to submit duplicate page for turn #{@game.current_turn}"
+      flash[:notice] = "既にこのターンの回答を送信済みです"
+      redirect_to sketch_book_path(@sketch_book) and return
+    end
+
     page_number = @sketch_book.pages.count + 1
     page = Page.create(
       sketch_book_id: @sketch_book.id,
@@ -138,6 +169,13 @@ class SketchBooksController < ApplicationController
 
   def check_and_advance_turn
     room = Cache::Room.find(@game.room_id)
+
+    # ゲームが既に終了している場合は処理しない
+    if @game.finished? || @game.round_finished?
+      Rails.logger.info "=== check_and_advance_turn: Game already finished, redirecting to results ==="
+      redirect_to results_room_path(room.id) and return
+    end
+
     sketch_books = SketchBook.by_room(@game.room_id).by_round(@game.current_round)
 
     # 全員がページを追加したかチェック
@@ -146,31 +184,50 @@ class SketchBooksController < ApplicationController
     end
 
     Rails.logger.info "=== check_and_advance_turn ==="
+    Rails.logger.info "Game status: #{@game.status}"
     Rails.logger.info "Current turn: #{@game.current_turn}"
+    Rails.logger.info "Current round: #{@game.current_round} / #{room.total_round}"
     Rails.logger.info "All completed: #{all_completed}"
+    Rails.logger.info "Player count: #{room.entering_count}"
     Rails.logger.info "Sketch books count: #{sketch_books.count}"
     sketch_books.each do |book|
-      Rails.logger.info "  Book #{book.id}: #{book.pages.count} pages"
+      Rails.logger.info "  Book #{book.id} (owner: #{book.owner_name}): #{book.pages.count} pages, current holder: #{@game.current_holder(book.id)}"
     end
 
     if all_completed
+      Rails.logger.info "All players completed turn #{@game.current_turn}"
+
       # スケッチブックを回す
       @game.rotate_sketch_books!(room.member_names)
+      Rails.logger.info "After rotation:"
+      sketch_books.each do |book|
+        Rails.logger.info "  Book #{book.id} (owner: #{book.owner_name}): current holder: #{@game.current_holder(book.id)}"
+      end
 
-      # 全員に戻ったかチェック
-      if @game.all_books_returned?(sketch_books)
-        # ラウンド終了
+      # 全員に戻ったかチェック（回した後に）
+      # ただし、十分なターン数が経過している場合のみ終了判定
+      # プレイヤー数分のターンが完了したら、スケッチブックは1周して戻ってくる
+      books_returned = @game.all_books_returned?(sketch_books)
+      enough_turns = @game.current_turn >= room.entering_count
+
+      Rails.logger.info "Books returned after rotate: #{books_returned}"
+      Rails.logger.info "Enough turns (#{@game.current_turn} >= #{room.entering_count}): #{enough_turns}"
+
+      if books_returned && enough_turns
+        # ゲーム終了
+        Rails.logger.info "All books have returned to owners and enough turns completed. Ending game."
+
         sketch_books.each(&:mark_as_completed!)
         @game.finish_round!
 
         # 次のラウンドがあるかチェック
         if @game.current_round < room.total_round
-          # 次のラウンド開始準備
+          Rails.logger.info "Moving to next round"
           broadcast_redirect_to_room(room.id)
           flash[:notice] = "ラウンド#{@game.current_round}が終了しました！"
           redirect_to room_path(room.id)
         else
-          # ゲーム終了
+          Rails.logger.info "Game completely finished"
           @game.finish!
           broadcast_redirect_to_results(room.id)
           flash[:notice] = "ゲームが終了しました！"
@@ -178,7 +235,11 @@ class SketchBooksController < ApplicationController
         end
       else
         # 次のターンへ
+        Rails.logger.info "Continuing to next turn (books_returned: #{books_returned}, enough_turns: #{enough_turns})"
+
+        # 次のターンへ
         @game.next_turn!
+        Rails.logger.info "Advanced to turn #{@game.current_turn} (#{@game.turn_type})"
 
         # current_sketch_book_idを更新
         update_current_sketch_books(room, sketch_books)

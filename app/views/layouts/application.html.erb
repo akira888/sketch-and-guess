@@ -13,9 +13,8 @@
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <%= favicon_link_tag "favicon.svg", type: "image/svg+xml" %>
+    <%= favicon_link_tag "favicon.svg", rel: "apple-touch-icon", type: "image/svg+xml" %>
 
     <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
@@ -23,10 +22,53 @@
   </head>
 
   <body>
-    <main class="container mx-auto mt-28 px-5">
-      <div id="notice">
+    <header style="background: linear-gradient(135deg, #FFF9E6 0%, #FFE4B5 100%); padding: 20px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.1); margin-bottom: 30px;">
+      <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; text-align: center;">
+        <div style="display: inline-block;">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 120" width="400" height="80" style="max-width: 100%; height: auto;">
+            <defs>
+              <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                <feDropShadow dx="2" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+              </filter>
+            </defs>
+            <g transform="translate(20, 30)">
+              <rect x="0" y="15" width="35" height="12" fill="#FDB94E" stroke="#333" stroke-width="2" rx="1"/>
+              <polygon points="35,15 35,27 45,21" fill="#333" stroke="#333" stroke-width="2"/>
+              <rect x="-8" y="15" width="8" height="12" fill="#E74C3C" stroke="#333" stroke-width="2" rx="1"/>
+              <rect x="-2" y="15" width="2" height="12" fill="#C0C0C0"/>
+              <line x1="8" y1="15" x2="8" y2="27" stroke="#D4A03A" stroke-width="1"/>
+              <line x1="28" y1="15" x2="28" y2="27" stroke="#D4A03A" stroke-width="1"/>
+            </g>
+            <g filter="url(#shadow)">
+              <text x="70" y="50" font-family="'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive, sans-serif" font-size="36" font-weight="bold" fill="#FF6B6B" stroke="#333" stroke-width="1">Sketch</text>
+              <text x="204" y="48" font-family="'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif" font-size="28" font-weight="bold" fill="#4ECDC4" stroke="#333" stroke-width="1" transform="rotate(-10, 217, 48)">&</text>
+              <text x="234" y="50" font-family="'Comic Sans MS', 'Chalkboard SE', 'Bradley Hand', cursive, sans-serif" font-size="36" font-weight="bold" fill="#95E1D3" stroke="#333" stroke-width="1">Guess</text>
+            </g>
+            <text x="128" y="72" font-family="'Comic Sans MS', 'Chalkboard SE', cursive, sans-serif" font-size="14" fill="#666" font-style="italic">絵しりとり伝言ゲーム</text>
+            <g transform="translate(345, 25)">
+              <circle cx="15" cy="15" r="18" fill="#FFD93D" stroke="#333" stroke-width="2.5"/>
+              <text x="15" y="24" font-family="'Comic Sans MS', Arial, sans-serif" font-size="26" font-weight="bold" fill="#333" text-anchor="middle">?</text>
+            </g>
+            <g transform="translate(65, 15)">
+              <polygon points="5,0 6,3.5 10,3.5 7,5.5 8,9 5,7 2,9 3,5.5 0,3.5 4,3.5" fill="#FFB6C1" stroke="#333" stroke-width="1"/>
+            </g>
+            <g transform="translate(310, 70)">
+              <polygon points="4,0 5,3 8,3 6,5 7,8 4,6 1,8 2,5 0,3 3,3" fill="#98D8C8" stroke="#333" stroke-width="1"/>
+            </g>
+            <circle cx="285" cy="20" r="2.5" fill="#4ECDC4" opacity="0.6"/>
+            <circle cx="330" cy="15" r="2" fill="#FFD93D" opacity="0.6"/>
+            <path d="M 70 80 Q 85 83, 100 80 T 130 80 T 160 80 T 190 80 T 220 80 T 250 80 T 280 80 T 310 80" stroke="#FF6B6B" stroke-width="2" fill="none" opacity="0.4"/>
+          </svg>
+        </div>
+      </div>
+    </header>
+
+    <main class="container mx-auto px-5">
+      <div id="notice" style="margin-bottom: 20px; text-align: center;">
         <% flash.each do |message_type, message| %>
-         <%= message %>
+          <div style="padding: 10px; background: <%= message_type == 'notice' ? '#d4edda' : '#f8d7da' %>; color: <%= message_type == 'notice' ? '#155724' : '#721c24' %>; border-radius: 5px; margin-bottom: 10px;">
+            <%= message %>
+          </div>
         <% end %>
       </div>
       <%= yield %>

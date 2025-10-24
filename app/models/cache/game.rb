@@ -1,22 +1,3 @@
-# frozen_string_literal: true
-
-# Cache::Game stored in SolidCache
-#
-# Example usage:
-#   game = Cache::Game.new(
-#     room_id: nil,
-#     current_turn: nil,
-#     turn_type: nil,
-#     turn_started_at: nil,
-#     current_round: nil,
-#     status: nil,
-#     sketch_book_holders: nil,
-#   )
-#   game.save
-#
-#   # Later...
-#   game = Cache::Game.find("some_id")
-#   game.destroy
 class Cache::Game < CacheModel
   # Attributes
   attribute :room_id, :string
@@ -26,13 +7,15 @@ class Cache::Game < CacheModel
   attribute :current_round, :integer, default: 1
   attribute :status, :string, default: "waiting"
   attribute :sketch_book_holders, :string # JSON string for current holders
+  attribute :dice_result, :integer # ダイスの出目（1-6）
 
   # Validations
   validates :room_id, presence: true
   validates :current_turn, numericality: { greater_than: 0 }
   validates :current_round, numericality: { greater_than: 0 }
-  validates :status, inclusion: { in: %w[waiting in_progress round_finished finished] }
+  validates :status, inclusion: { in: %w[waiting prompt_selection in_progress round_finished finished] }
   validates :turn_type, inclusion: { in: %w[sketch text] }
+  validates :dice_result, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 6 }, allow_nil: true
 
   # Configuration
   def self.cache_key_prefix
@@ -64,6 +47,10 @@ class Cache::Game < CacheModel
   # Status checks
   def waiting?
     status == "waiting"
+  end
+
+  def prompt_selection?
+    status == "prompt_selection"
   end
 
   def in_progress?
