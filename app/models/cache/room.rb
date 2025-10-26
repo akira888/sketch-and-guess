@@ -66,4 +66,8 @@ class Cache::Room < CacheModel
   def can_start?
     entering_count >= 4 && entering_count <= member_limit
   end
+
+  def room_channel
+    "room_#{id}"
+  end
 end
