@@ -37,6 +37,7 @@ class RoomsController < ApplicationController
     elsif @game&.prompt_selection?
       # お題選択フェーズの場合、お題選択画面にリダイレクト
       redirect_to prompt_selection_room_path(@cache_room.id)
+      # else はユーザー参加待ち状態となる
     end
   end
 
