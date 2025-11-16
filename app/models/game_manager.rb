@@ -31,7 +31,7 @@ class GameManager
   def prepare_prompt_selection!
     raise "ルームが満員ではありません" unless room.full?
 
-    member_order = room.member_order_array
+    member_order = room.members
     player_count = member_order.size
 
     # プレイヤー数分の異なるcard_numを選択
@@ -80,8 +80,8 @@ class GameManager
 
       # 各ユーザーのお題を確定
       prompts_by_user = {}
-      room.member_order_array.each do |member|
-        user = Cache::User.find(member["user_id"])
+      room.members.each do |member|
+        user = Cache::User.find(member["id"])
         next unless user&.assigned_card_num
 
         prompt = Prompt.find_by_card_and_order(user.assigned_card_num, dice_result)
@@ -117,7 +117,7 @@ class GameManager
   # お題の配布
   # @return [Hash] { { user_id:, user_name: } => Prompt }
   def distribute_prompts(dice_roll)
-    member_order = room.member_order_array
+    member_order = room.members
     player_count = member_order.size
 
     # プレイヤー数分の異なるcard_numを選択

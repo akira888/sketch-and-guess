@@ -1,4 +1,7 @@
 class RoomsController < ApplicationController
+  MEMBER_LIMIT_RANGE = 4..8
+  MEMBER_LIMIT_RANGE_DEV = 2..8
+
   def index; end
 
   def new
@@ -7,6 +10,7 @@ class RoomsController < ApplicationController
     session[:room_id] = nil
 
     @cache_room = Cache::Room.new(initial_params)
+    @member_limit_range = Rails.env.development? ? MEMBER_LIMIT_RANGE_DEV : MEMBER_LIMIT_RANGE
   end
 
   def create
@@ -159,7 +163,7 @@ class RoomsController < ApplicationController
     end
 
     # ルーム作成者を判定（最初のメンバー）
-    first_member = @cache_room.member_order_array.first
+    first_member = @cache_room.members.first
     @is_room_creator = first_member && first_member["user_id"] == @current_user.id
   end
 
