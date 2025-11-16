@@ -19,7 +19,7 @@ class UsersController < ApplicationController
     @cache_user = Cache::User.new(user_params)
     if @cache_user.save
       # 参加者リストに追加
-      @cache_room.add_member(@cache_user.id, @cache_user.name)
+      @cache_room.add_member(@cache_user)
       session[:user_id] = @cache_user.id
 
       flash[:notice] = "ルームに参加しました"
