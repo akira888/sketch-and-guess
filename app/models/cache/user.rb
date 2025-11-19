@@ -19,13 +19,6 @@ class Cache::User < CacheModel
     1.day
   end
 
-  # Find by room_id
-  def self.find_by_room(room_id)
-    # Note: This requires iteration or a separate index
-    # For now, this is a placeholder
-    raise NotImplementedError, "Use Cache::Room.member_order_array to get users in a room"
-  end
-
   # Check if user is holding their own sketch book
   def holding_own_book?
     sketch_book_id.present? && sketch_book_id == current_sketch_book_id
