@@ -1,6 +1,6 @@
 <h2>参加者一覧</h2>
 <ul>
-  <% cache_room.member_order_array.each do |member| %>
-    <li><%= member["user_name"] %></li>
+  <% cache_room.members.each do |member| %>
+    <li><%= member["name"] %></li>
   <% end %>
 </ul>

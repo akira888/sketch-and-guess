@@ -1,4 +1,4 @@
-<%= turbo_stream_from "room_#{@cache_room.id}" %>
+<%= turbo_stream_from @cache_room.room_channel %>
 
 <div class="waiting-room">
   <h1 class="page-title">待機中...</h1>
@@ -20,10 +20,10 @@
   <div id="participants" class="participants-card">
     <h2 class="card-title">参加者一覧</h2>
     <ul class="participants-list">
-      <% @cache_room.member_order_array.each do |member| %>
+      <% @cache_room.members.each do |member| %>
         <li class="participant-item">
           <span class="participant-icon">👤</span>
-          <span class="participant-name"><%= member["user_name"] %></span>
+          <span class="participant-name"><%= member["name"] %></span>
         </li>
       <% end %>
     </ul>

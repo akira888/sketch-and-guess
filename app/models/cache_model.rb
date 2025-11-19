@@ -29,6 +29,7 @@ class CacheModel
   include ActiveModel::Attributes
   include ActiveModel::Validations
   include ActiveModel::Serialization
+  include Turbo::Broadcastable
 
   # Primary key for cache storage
   attribute :id, :string

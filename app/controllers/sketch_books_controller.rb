@@ -293,8 +293,8 @@ class SketchBooksController < ApplicationController
     Rails.logger.info "=== update_current_sketch_books ==="
 
     # 各ユーザーのcurrent_sketch_book_idを更新
-    room.member_order_array.each do |member|
-      user = Cache::User.find(member["user_id"])
+    room.members.each do |member|
+      user = Cache::User.find(member["id"])
       next unless user
 
       # このユーザーが現在持っているスケッチブックを探す
