@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :find_room, only: [:new, :create]
+  before_action :find_room, only: [ :new, :create ]
 
   def new
     room_id = @cache_room.id
