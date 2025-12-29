@@ -67,16 +67,6 @@ class SketchBooksController < ApplicationController
 
   private
 
-  def set_current_user
-    user_id = session[:user_id]
-    @current_user = Cache::User.find(user_id)
-
-    unless @current_user
-      flash[:alert] = "ユーザー情報が見つかりません"
-      redirect_to root_path
-    end
-  end
-
   def set_sketch_book
     @sketch_book = SketchBook.find(params[:id])
   rescue ActiveRecord::RecordNotFound
