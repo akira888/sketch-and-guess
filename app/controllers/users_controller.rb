@@ -22,8 +22,14 @@ class UsersController < ApplicationController
       @cache_room.add_member(@cache_user)
       session[:user_id] = @cache_user.id
 
-      flash[:notice] = "ルームに参加しました"
-      redirect_to new_sketch_book_path
+      # スケッチブックも作る
+      sketch_book = SketchBook.new(owner_name: @cache_user.name, room_id: @cache_room.id)
+      if sketch_book.save
+        redirect_to new_sketch_book_first_page_path(sketch_book)
+      else
+        flash.now[:alert] = "ユーザー作成中にエラーが発生しました。リトライしてください"
+        render :new
+      end
 
       # Turbo Streamで待機中の他のユーザーに通知
       # broadcast_room_update(@cache_room)
