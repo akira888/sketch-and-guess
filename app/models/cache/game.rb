@@ -1,4 +1,7 @@
 class Cache::Game < CacheModel
+
+  before_save :params_normalization
+
   # Attributes
   attribute :room_id, :string
   attribute :current_turn, :integer, default: 1
@@ -8,6 +11,7 @@ class Cache::Game < CacheModel
   attribute :status, :string, default: "waiting"
   attribute :sketch_book_holders, :string # JSON string for current holders
   attribute :dice_result, :integer # ダイスの出目（1-6）
+  attribute :dealt_cards_json, :string, default: [].to_json
 
   # Validations
   validates :room_id, presence: true
@@ -145,10 +149,22 @@ class Cache::Game < CacheModel
     end
   end
 
+  def dealt_cards
+    @dealt_cards ||= JSON.parse dealt_cards_json
+  end
+
+  def add_dealt_card(number)
+
+  end
+
   private
 
   # Custom ID generation: use room_id as ID
   def generate_id
     self.id = room_id
+  end
+
+  def params_normalization
+    self.dealt_cards_json = dealt_cards.to_json
   end
 end
