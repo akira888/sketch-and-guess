@@ -14,7 +14,7 @@
 # カードというデータ構造はなく、 Prompt#card_num によってお題が６つごとにグルーピングされているところから
 # card has_many prompts のような状態になるため擬似的なデータ構造をモデルで表現している
 # ユーザーはcard単位でお題候補を一時的に保持し、乱数ルーレットにより手持ちのカードから一つのお題が選定される
-class Card < CacheModel
+class Cache::Card < CacheModel
   # Attributes
   attribute :user_id, :integer
   attribute :card_num, :integer
@@ -31,11 +31,6 @@ class Card < CacheModel
   def self.default_ttl
     1.hour
   end
-
-  # Custom methods
-  # def custom_method
-  #   # Your logic here
-  # end
 
   private
 
