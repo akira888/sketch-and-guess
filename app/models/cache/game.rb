@@ -11,7 +11,7 @@ class Cache::Game < CacheModel
   attribute :status, :string, default: "waiting"
   attribute :sketch_book_holders, :string # JSON string for current holders
   attribute :dice_result, :integer # ダイスの出目（1-6）
-  attribute :dealt_cards_json, :string, default: [].to_json
+  attribute :picked_cards_json, :string, default: [].to_json
 
   # Validations
   validates :room_id, presence: true
@@ -149,12 +149,16 @@ class Cache::Game < CacheModel
     end
   end
 
-  def dealt_cards
-    @dealt_cards ||= JSON.parse dealt_cards_json
+  def picked_cards
+    @dealt_cards ||= JSON.parse picked_cards_json
   end
 
-  def add_dealt_card(number)
+  def pick_prompt_card
+    available_card_nums = Prompt.distinct.pluck(:card_num) - picked_cards
+    picked_card_num = available_card_nums.sample.to_i
+    self.picked_cards += picked_card_num
 
+    picked_card_num
   end
 
   private
@@ -165,6 +169,6 @@ class Cache::Game < CacheModel
   end
 
   def params_normalization
-    self.dealt_cards_json = dealt_cards.to_json
+    self.picked_cards_json = picked_cards.to_json
   end
 end
