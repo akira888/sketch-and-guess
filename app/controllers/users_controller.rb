@@ -75,7 +75,7 @@ class UsersController < ApplicationController
   end
 
   def find_room
-    @cache_room = Cache::Room.find session[:room_id]
+    @cache_room = Cache::Room.find(session[:room_id] || params[:room_id])
     render "not_found", status: 404 unless @cache_room
   end
 
