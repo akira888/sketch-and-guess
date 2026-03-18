@@ -1,6 +1,6 @@
 class SketchBook < ApplicationRecord
   # Associations
-  belongs_to :prompt
+  belongs_to :prompt, optional: true
   has_many :pages, dependent: :destroy
 
   # Validations
