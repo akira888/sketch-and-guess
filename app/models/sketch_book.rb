@@ -23,10 +23,4 @@ class SketchBook < ApplicationRecord
     # 1ページ目（お題） + プレイヤー数分のターン
     player_count + 1
   end
-
-  def completed?
-    # completedフラグで判定
-    # または、ページ数で判定することも可能
-    completed
-  end
 end
