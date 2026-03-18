@@ -1,6 +1,6 @@
 class Page < ApplicationRecord
   # Associations
-  belongs_to :sketch_book
+  belongs_to :sketch_book, inverse_of: :pages
   has_one_attached :image
 
   # Enums

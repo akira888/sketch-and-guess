@@ -25,37 +25,12 @@ class UsersController < ApplicationController
       # スケッチブックも作る
       sketch_book = SketchBook.new(owner_name: @cache_user.name, room_id: @cache_room.id)
       if sketch_book.save
+        # カード持たせる
         redirect_to new_sketch_book_first_page_path(sketch_book)
       else
         flash.now[:alert] = "ユーザー作成中にエラーが発生しました。リトライしてください"
-        render :new
+        render :new, status: :unprocessable_entity
       end
-
-      # Turbo Streamで待機中の他のユーザーに通知
-      # broadcast_room_update(@cache_room)
-
-      # 定員に達したか確認
-      # if @cache_room.full?
-      #   # お題選択フェーズへ
-      #   begin
-      #     game_manager = GameManager.new(@cache_room)
-      #     game = game_manager.prepare_prompt_selection!
-      #
-      #     # ユーザー情報を再読み込み（assigned_card_numが設定されている）
-      #     @cache_user = Cache::User.find(@cache_user.id)
-      #
-      #     # 全員をお題選択画面にリダイレクト
-      #     broadcast_prompt_selection_start(@cache_room)
-      #
-      #     flash[:notice] = "全員揃いました！お題を選びます"
-      #     redirect_to prompt_selection_room_path(@cache_room.id)
-      #   rescue => e
-      #     flash[:alert] = "お題選択の準備に失敗しました: #{e.message}"
-      #     redirect_to room_path(@cache_room.id)
-      #   end
-      # else
-      #   # まだ定員に達していない場合は待機画面へ
-      # end
     else
       render :new
     end
