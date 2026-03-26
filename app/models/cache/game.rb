@@ -156,7 +156,7 @@ class Cache::Game < CacheModel
   def pick_prompt_card
     available_card_nums = Prompt.distinct.pluck(:card_num) - picked_cards
     picked_card_num = available_card_nums.sample.to_i
-    self.picked_cards += picked_card_num
+    self.picked_cards.push picked_card_num
 
     picked_card_num
   end

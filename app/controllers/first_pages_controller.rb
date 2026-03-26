@@ -10,6 +10,7 @@ class FirstPagesController < ApplicationController
       page_type: :prompt,
       user_name: @current_user.name
     )
+    @card = @current_user.assigned_card_num
   end
 
   private
