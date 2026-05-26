@@ -8,8 +8,8 @@ class Prompt < ApplicationRecord
   validates :card_num, presence: true
 
   # Scopes
-  scope :by_card, ->(card_num) { where(card_num: card_num) }
-  scope :by_order, ->(order) { where(order: order) }
+  scope :for_card, ->(card_num) { where(card_num: card_num) }
+  scope :ordered, -> { order(:order) }
 
   # Class methods
   def self.find_by_card_and_order(card_num, order)
