@@ -11,6 +11,7 @@ class FirstPagesController < ApplicationController
       user_name: @current_user.name
     )
     @card = PromptCard.find @current_user.assigned_card_num
+    flash.now[:notice] = "ユーザー登録が完了しました。他のユーザーが揃うのをお待ちください。"
   end
 
   private

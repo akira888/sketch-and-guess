@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :find_room, only: [ :new, :create ]
+  before_action :find_room, only: [ :new, :create, :update ]
 
   def new
     room_id = @cache_room.id
@@ -22,6 +22,7 @@ class UsersController < ApplicationController
     # カード持たせる
     game = Cache::Game.find_by_room(@cache_room.id)
     @cache_user.assigned_card_num = game.pick_prompt_card
+    @cache_user.assigned_count = 1
     if @cache_user.save && game.save && @cache_room.save
       session[:user_id] = @cache_user.id
 
@@ -43,6 +44,21 @@ class UsersController < ApplicationController
     unless @cache_user
       render "not_found", status: 404
     end
+  end
+
+  def update
+    @cache_user = Cache::User.find(params[:id])
+
+    if @cache_user.can_redraw?
+      game = Cache::Game.find_by_room(@cache_room.id)
+      @cache_user.assigned_card_num = game.pick_prompt_card
+      @cache_user.assigned_count += 1
+      flash[:alert] = "カード更新中にエラーが発生しました" unless @cache_user.save && game.save
+    else
+      flash[:alert] = "引き直しは3回までです"
+    end
+
+    redirect_to new_sketch_book_first_page_path(SketchBook.find(@cache_user.sketch_book_id))
   end
 
   private

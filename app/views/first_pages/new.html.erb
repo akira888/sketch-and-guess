@@ -1,7 +1,3 @@
-<p>
-  ユーザー登録が完了しました。
-  他のユーザーが揃うのをお待ちください。
-</p>
 <div class="card">
   <p>
     あなたのお題カードはこちら
@@ -11,7 +7,9 @@
       <%= tag.li word %>
     <% end %>
   <% end %>
-  <button>変更する</button>
+  <% if @current_user.can_redraw? %>
+    <%= button_to "カードを引き直す(3回まで)", user_path(@current_user), method: :patch %>
+  <% end %>
   <button>これでOK</button>
 </div>
 <pre>
