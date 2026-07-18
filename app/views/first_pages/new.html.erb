@@ -1,9 +1,21 @@
-first page!!
-<%= @card %>
+<p>
+  ユーザー登録が完了しました。
+  他のユーザーが揃うのをお待ちください。
+</p>
+<div class="card">
+  <p>
+    あなたのお題カードはこちら
+  </p>
+  <%= tag.ul class: "prompts" do %>
+    <% @card.prompts.pluck(:word).each do |word| %>
+      <%= tag.li word %>
+    <% end %>
+  <% end %>
+  <button>変更する</button>
+  <button>これでOK</button>
+</div>
 <pre>
   todo:
-   カードを見せる→チェンジできる
-   他の人を待つ
     揃ったらsaikoro を振る
   するとお題が決まる
 
