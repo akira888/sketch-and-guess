@@ -1,5 +1,4 @@
 class Cache::Game < CacheModel
-
   before_save :params_normalization
 
   # Attributes
