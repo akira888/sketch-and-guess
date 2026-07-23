@@ -1,0 +1,20 @@
+# pick_prompt_card 用: distinct な card_num が複数必要
+card1_order1:
+  card_num: 1
+  order: 1
+  word: りんご
+
+card1_order2:
+  card_num: 1
+  order: 2
+  word: ゴリラ
+
+card2_order1:
+  card_num: 2
+  order: 1
+  word: ラッパ
+
+card3_order1:
+  card_num: 3
+  order: 1
+  word: パセリ

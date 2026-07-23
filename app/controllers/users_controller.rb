@@ -14,28 +14,16 @@ class UsersController < ApplicationController
   end
 
   def create
-    render "busy", status: 403 if @cache_room.full?
+    return render "busy", status: 403 if @cache_room.full?
 
-    @cache_user = Cache::User.new(user_params)
-    # 参加者リストに追加
-    @cache_room.add_member(@cache_user)
-    # カード持たせる
-    game = Cache::Game.find_by_room(@cache_room.id)
-    @cache_user.assigned_card_num = game.pick_prompt_card
-    @cache_user.assigned_count = 1
-    if @cache_user.save && game.save && @cache_room.save
-      session[:user_id] = @cache_user.id
-
-      # スケッチブックも作る
-      sketch_book = SketchBook.new(owner_name: @cache_user.name, room_id: @cache_room.id)
-      if sketch_book.save
-        redirect_to new_sketch_book_first_page_path(sketch_book)
-      else
-        flash.now[:alert] = "ユーザー作成中にエラーが発生しました。リトライしてください"
-        render :new, status: :unprocessable_entity
-      end
+    room_entry = RoomEntry.new(@cache_room)
+    if room_entry.join_user(user_params)
+      session[:user_id] = room_entry.user.id
+      redirect_to new_sketch_book_first_page_path(room_entry.sketch_book)
     else
-      render :new
+      flash.now[:alert] = "ユーザー作成中にエラーが発生しました。リトライしてください"
+      @cache_user = room_entry.user
+      render :new, status: :unprocessable_entity
     end
   end
 
