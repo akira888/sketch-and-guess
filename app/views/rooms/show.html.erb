@@ -23,7 +23,7 @@
       <% @cache_room.members.each do |member| %>
         <li class="participant-item">
           <span class="participant-icon">👤</span>
-          <span class="participant-name"><%= member["name"] %></span>
+          <span class="participant-name"><%= member.name %></span>
         </li>
       <% end %>
     </ul>

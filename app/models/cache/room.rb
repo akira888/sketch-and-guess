@@ -22,12 +22,12 @@ class Cache::Room < CacheModel
   end
 
   def members
-    @members ||= member_ids.map { |user_id| User.find user_id }
+    @members ||= member_ids.map { |user_id| Cache::User.find user_id }
   end
 
   def add_member(user)
     member_ids << user.id
-    @member_ids_json = member_ids.to_json
+    self.member_ids_json = member_ids.to_json
 
     save
   end
