@@ -1,6 +1,6 @@
 class UsersController < ApplicationController
   before_action :find_room, only: [ :new, :create, :redraw_card, :decide_card ]
-
+  before_action :identity_verification, only: [ :redraw_card, :decide_card ]
   def new
     room_id = @cache_room.id
 
@@ -73,6 +73,13 @@ class UsersController < ApplicationController
   def find_room
     @cache_room = Cache::Room.find(session[:room_id] || params[:room_id])
     render "not_found", status: 404 unless @cache_room
+  end
+
+  def identity_verification
+    unless session[:user_id] == params[:id]
+      flash[:alert] = "不正なアクセスです"
+      redirect_to root_path
+    end
   end
 
   def broadcast_room_update(room)

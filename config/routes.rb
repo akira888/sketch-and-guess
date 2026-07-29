@@ -19,7 +19,7 @@ Rails.application.routes.draw do
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
 
-  resources :users, only: [ :new, :create, :show, :update ] do
+  resources :users, only: [ :new, :create, :show ] do
     member do
       patch :decide_card
       patch :redraw_card

@@ -22,7 +22,7 @@ class Cache::User < CacheModel
   end
 
   def card_decided?
-    card_decided
+    card_decided || assigned_count > 3
   end
 
   def can_redraw?
