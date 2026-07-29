@@ -16,6 +16,7 @@ class RoomEntry
 
     user.assigned_card_num = game.pick_prompt_card
     user.assigned_count = 1
+    user.card_decided = false
     user.sketch_book_id = @sketch_book.id
     return false unless user.save && game.save
 

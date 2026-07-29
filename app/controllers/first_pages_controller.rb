@@ -11,7 +11,11 @@ class FirstPagesController < ApplicationController
       user_name: @current_user.name
     )
     @card = PromptCard.find @current_user.assigned_card_num
-    flash.now[:notice] = "ユーザー登録が完了しました。他のユーザーが揃うのをお待ちください。"
+
+    # 全てのユーザーが揃い、カードを決定したか
+    # 準備完了していたらサイコロを振る
+    # 結果を全員に共有→画面からcreateしてもらう
+    # createしたらshow に遷移→最初の1ページが完成し、お題が見えている状態
   end
 
   private

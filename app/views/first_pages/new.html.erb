@@ -8,9 +8,11 @@
     <% end %>
   <% end %>
   <% if @current_user.can_redraw? %>
-    <%= button_to "カードを引き直す(3回まで)", user_path(@current_user), method: :patch %>
+    <%= button_to "カードを引き直す(3回まで)", redraw_card_user_path(@current_user), method: :patch %>
   <% end %>
-  <button>これでOK</button>
+  <% unless @current_user.card_decided? %>
+    <%= button_to "これでOK", decide_card_user_path(@current_user), method: :patch %>
+  <% end %>
 </div>
 <pre>
   todo:

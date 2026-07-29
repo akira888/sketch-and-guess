@@ -6,6 +6,7 @@ class Cache::User < CacheModel
   attribute :current_sketch_book_id, :integer # 現在持っているスケッチブックID（オプション）
   attribute :assigned_card_num, :integer # お題カード番号
   attribute :assigned_count, :integer
+  attribute :card_decided, :boolean
 
   # Validations
   validates :name, presence: true
@@ -20,7 +21,12 @@ class Cache::User < CacheModel
     1.day
   end
 
+  def card_decided?
+    card_decided
+  end
+
   def can_redraw?
+    return false if card_decided?
     assigned_count <= 3
   end
 

@@ -18,7 +18,13 @@ Rails.application.routes.draw do
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
-  resources :users, only: [ :new, :create, :show, :update ]
+
+  resources :users, only: [ :new, :create, :show, :update ] do
+    member do
+      patch :decide_card
+      patch :redraw_card
+    end
+  end
 
   resources :sketch_books, only: [ :new, :index, :show ] do
     post :add_page, on: :member

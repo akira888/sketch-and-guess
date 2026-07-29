@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :find_room, only: [ :new, :create, :update ]
+  before_action :find_room, only: [ :new, :create, :redraw_card, :decide_card ]
 
   def new
     room_id = @cache_room.id
@@ -19,10 +19,13 @@ class UsersController < ApplicationController
     room_entry = RoomEntry.new(@cache_room)
     if room_entry.join_user(user_params)
       session[:user_id] = room_entry.user.id
+      flash[:notice] = "ユーザー登録が完了しました。他のユーザーが揃うのをお待ちください。"
+
       redirect_to new_sketch_book_first_page_path(room_entry.sketch_book)
     else
       flash.now[:alert] = "ユーザー作成中にエラーが発生しました。リトライしてください"
       @cache_user = room_entry.user
+
       render :new, status: :unprocessable_entity
     end
   end
@@ -34,7 +37,7 @@ class UsersController < ApplicationController
     end
   end
 
-  def update
+  def redraw_card
     @cache_user = Cache::User.find(params[:id])
 
     if @cache_user.can_redraw?
@@ -44,6 +47,18 @@ class UsersController < ApplicationController
       flash[:alert] = "カード更新中にエラーが発生しました" unless @cache_user.save && game.save
     else
       flash[:alert] = "引き直しは3回までです"
+    end
+
+    redirect_to new_sketch_book_first_page_path(SketchBook.find(@cache_user.sketch_book_id))
+  end
+
+  def decide_card
+    @cache_user = Cache::User.find(params[:id])
+    @cache_user.card_decided = true
+    if @cache_user.save
+      flash[:notice] = "カードを決定しました"
+    else
+      flash[:alert] = "保存に失敗しました"
     end
 
     redirect_to new_sketch_book_first_page_path(SketchBook.find(@cache_user.sketch_book_id))
