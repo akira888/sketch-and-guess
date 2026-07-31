@@ -47,6 +47,10 @@ class Cache::Game < CacheModel
     self.sketch_book_holders = hash.to_json
   end
 
+  def facilitator
+    @facilitator ||= GameFacilitator.new(self)
+  end
+
   # Status checks
   def waiting?
     status == "waiting"
@@ -158,6 +162,17 @@ class Cache::Game < CacheModel
     self.picked_cards.push picked_card_num
 
     picked_card_num
+  end
+
+  def roll_dice
+    return false unless prompt_selection?
+    return false if dice_result.present?
+
+    # ダイスを振る（1-6）
+    self.dice_result = rand(1..6)
+    Rails.logger.info "Dice rolled: #{dice_result} for room #{room_id}"
+
+    save
   end
 
   private
