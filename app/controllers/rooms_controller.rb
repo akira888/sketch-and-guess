@@ -20,14 +20,13 @@ class RoomsController < ApplicationController
       session[:room_id] = @cache_room.id
       game = Cache::Game.new(room_id: @cache_room.id)
       if game.save
-        flash[:notice] = "ゲームルームを作成しました"
-        redirect_to room_path @cache_room
+        redirect_to room_path @cache_room, notice: "ゲームルームを作成しました"
       else
-        flash[:notice] = "ゲームルームの作成に失敗しました"
+        flash[:alert] = "ゲームルームの作成に失敗しました"
         render :new
       end
     else
-      flash[:notice] = "ゲームルームの作成に失敗しました"
+      flash[:alert] = "ゲームルームの作成に失敗しました"
       render :new
     end
   end
@@ -267,20 +266,5 @@ class RoomsController < ApplicationController
 
   def initial_params
     { member_limit: 4, total_round: 1 }
-  end
-
-  def broadcast_dice_result(room, dice_result)
-    # ダイス結果をブロードキャスト
-    Turbo::StreamsChannel.broadcast_append_to(
-      "room_#{room.id}_dice",
-      target: "body",
-      html: <<~HTML
-        <script>
-          window.diceResult = #{dice_result};
-          const event = new CustomEvent('diceRolled', { detail: { result: #{dice_result} } });
-          document.dispatchEvent(event);
-        </script>
-      HTML
-    )
   end
 end
