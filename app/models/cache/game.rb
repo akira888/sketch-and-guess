@@ -3,8 +3,8 @@ class Cache::Game < CacheModel
 
   # Attributes
   attribute :room_id, :string
-  attribute :current_turn, :integer, default: 1
-  attribute :turn_type, :string, default: "sketch"
+  attribute :current_turn, :integer, default: 0
+  attribute :turn_type, :string, default: "prompt"
   attribute :turn_started_at, :datetime
   attribute :current_round, :integer, default: 1
   attribute :status, :string, default: "waiting"
@@ -17,7 +17,7 @@ class Cache::Game < CacheModel
   validates :current_turn, numericality: { greater_than: 0 }
   validates :current_round, numericality: { greater_than: 0 }
   validates :status, inclusion: { in: %w[waiting prompt_selection in_progress round_finished finished] }
-  validates :turn_type, inclusion: { in: %w[sketch text] }
+  validates :turn_type, inclusion: { in: %w[sketch text prompts] }
   validates :dice_result, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 6 }, allow_nil: true
 
   # Configuration
