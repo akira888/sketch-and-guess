@@ -14,10 +14,10 @@ class Cache::Game < CacheModel
 
   # Validations
   validates :room_id, presence: true
-  validates :current_turn, numericality: { greater_than: 0 }
-  validates :current_round, numericality: { greater_than: 0 }
+  validates :current_turn, numericality: { greater_than_or_equal_to: 0 }
+  validates :current_round, numericality: { greater_than_or_equal_to: 1 }
   validates :status, inclusion: { in: %w[waiting prompt_selection in_progress round_finished finished] }
-  validates :turn_type, inclusion: { in: %w[sketch text prompts] }
+  validates :turn_type, inclusion: { in: %w[sketch text prompt] }
   validates :dice_result, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 6 }, allow_nil: true
 
   # Configuration
