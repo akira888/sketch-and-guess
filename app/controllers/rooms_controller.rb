@@ -20,7 +20,7 @@ class RoomsController < ApplicationController
       session[:room_id] = @cache_room.id
       game = Cache::Game.new(room_id: @cache_room.id)
       if game.save
-        redirect_to room_path @cache_room, notice: "ゲームルームを作成しました"
+        redirect_to room_path(@cache_room), notice: "ゲームルームを作成しました"
       else
         flash[:alert] = "ゲームルームの作成に失敗しました"
         render :new
