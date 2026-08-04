@@ -1,24 +1,25 @@
 class UsersController < ApplicationController
-  before_action :find_room, only: [ :new, :create, :redraw_card, :decide_card ]
+  before_action :find_room, only: [ :redraw_card, :decide_card ]
   before_action :identity_verification, only: [ :redraw_card, :decide_card ]
   def new
+    @cache_room = Cache::Room.find(params[:room_id])
+    return render "not_found", status: 404 unless @cache_room
+
     room_id = @cache_room.id
 
-    # 別のルームから来た場合は、古いユーザー情報をクリア
-    if session[:room_id] && session[:room_id] != room_id
-      session[:user_id] = nil
-    end
-
-    session[:room_id] = room_id
+    session[:user_id] = nil
     @cache_user = Cache::User.new(room_id:)
   end
 
   def create
+    @cache_room = Cache::Room.find(user_params[:room_id])
+    return render "not_found", status: 404 unless @cache_room
     return render "busy", status: 403 if @cache_room.full?
 
     room_entry = RoomEntry.new(@cache_room)
     if room_entry.join_user(user_params)
       session[:user_id] = room_entry.user.id
+      session[:room_id] = @cache_room.id
       flash[:notice] = "ユーザー登録が完了しました。他のユーザーが揃うのをお待ちください。"
 
       redirect_to new_sketch_book_first_page_path(room_entry.sketch_book)
@@ -71,7 +72,7 @@ class UsersController < ApplicationController
   end
 
   def find_room
-    @cache_room = Cache::Room.find(session[:room_id] || params[:room_id])
+    @cache_room = Cache::Room.find(session[:room_id])
     render "not_found", status: 404 unless @cache_room
   end
 
