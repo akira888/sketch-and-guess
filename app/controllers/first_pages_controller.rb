@@ -1,8 +1,7 @@
 # お題決めるフェーズ
 class FirstPagesController < ApplicationController
-  # TODO :create, :edit, :update
-  before_action :set_sketch_book, only: [ :new ]
-  before_action :set_current_user, only: [ :new ]
+  before_action :set_sketch_book, only: [ :new, :create, :show ]
+  before_action :set_current_user, only: [ :new, :create, :show ]
 
   def new
     @page = @sketch_book.pages.build(
@@ -11,23 +10,63 @@ class FirstPagesController < ApplicationController
       user_name: @current_user.name
     )
     @card = PromptCard.find @current_user.assigned_card_num
+    @room = Cache::Room.find @current_user.room_id
+    @game = Cache::Game.find_by_room(@room.id)
 
-    room = Cache::Room.find @current_user.room_id
-    game = Cache::Game.find_by_room(room.id)
-    if room.full? && all_user_ready?(room)
-      if game.waiting?
-        game.facilitator.proceed!
+    # ユーザーが集まったとき
+    if @room.full? && all_user_ready?(@room)
+      if @game.waiting?
+        @game.facilitator.proceed!
       end
 
-      unless game.roll_dice
+      # サイコロを振る
+      broadcast_dice_result(@game.dice_result) if @game.roll_dice
+
+      if @game.dice_result.nil?
         flash.now[:alert] = "ゲームが進行できませんでした。リロードして下さい"
         render :new and return
       end
-
-      broadcast_dice_result(game.dice_result)
-      # 結果を全員に共有→画面からcreateしてもらう（自動送信を想定）
-      # createしたらshow に遷移→最初の1ページが完成し、お題が見えている状態
     end
+  end
+
+  def create
+    # フォームからパラメータはわたってこない。
+    # 必要な情報は各モデルから取り出す
+
+    # first page が登録済みの場合はshowへ移動
+    if (persisted_first_page = @sketch_book.pages.find_by(page_number: 1))
+      return redirect_to sketch_book_first_page_path(@sketch_book, persisted_first_page)
+    end
+
+    @game = Cache::Game.find_by_room(@current_user.room_id)
+    prompt = Prompt.find_by_card_and_order(@current_user.assigned_card_num, @game&.dice_result)
+
+    unless prompt
+      flash.now[:alert] = "お題カードか指定番号が決まっていないようです"
+      # new template parameters
+      @room = Cache::Room.find @current_user.room_id
+      @card = PromptCard.find @current_user.assigned_card_num
+      return render :new, status: :unprocessable_entity
+    end
+
+    first_page = @sketch_book.pages.build(
+      page_number: 1, page_type: :prompt,
+      user_name: @current_user.name,
+      content: prompt.word
+    )
+    if first_page.save
+      redirect_to sketch_book_first_page_path(@sketch_book, first_page), notice: "お題が決まりました"
+    else
+      flash.now[:alert] = "お題ページの作成に失敗しました"
+      # new template parameters
+      @room = Cache::Room.find @current_user.room_id
+      @card = PromptCard.find @current_user.assigned_card_num
+      render :new, status: :unprocessable_entity
+    end
+  end
+
+  def show
+    @page = @sketch_book.pages.find(params[:id])
   end
 
   private
@@ -41,17 +80,12 @@ class FirstPagesController < ApplicationController
   end
 
   def broadcast_dice_result(dice_result)
-    # ダイス結果をブロードキャスト
-    Turbo::StreamsChannel.broadcast_append_to(
-      "room_#{id}_dice",
-      target: "body",
-      html: <<~HTML
-        <script>
-          window.diceResult = #{dice_result};
-          const event = new CustomEvent('diceRolled', { detail: { result: #{dice_result} } });
-          document.dispatchEvent(event);
-        </script>
-      HTML
+    Turbo::StreamsChannel.broadcast_update_to(
+      @room.dice_channel,
+      target: helpers.dom_id(@game, :dice_result),
+      method: "morph",
+      partial: "first_pages/dice_result",
+      locals: { dice_result: dice_result, game: @game }
     )
   end
 end

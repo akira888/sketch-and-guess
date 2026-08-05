@@ -28,7 +28,6 @@ Rails.application.routes.draw do
 
   resources :sketch_books, only: [ :new, :index, :show ] do
     post :add_page, on: :member
-    # TODO :create, :edit, :update
-    resources :first_pages, only: [ :new ]
+    resources :first_pages, only: [ :new, :create, :show ]
   end
 end

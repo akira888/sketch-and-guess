@@ -1,3 +1,5 @@
+<%= turbo_stream_from @room.dice_channel %>
+
 <div class="card">
   <p>
     あなたのお題カードはこちら
@@ -14,9 +16,11 @@
     <%= button_to "これでOK", decide_card_user_path(@current_user), method: :patch %>
   <% end %>
 </div>
-<pre>
-  todo:
-    揃ったらsaikoro を振る
-  するとお題が決まる
-
-</pre>
+<%= form_with url: sketch_book_first_pages_url(@sketch_book), id: "create_first_page", data: {submitted: 0} do |f| %>
+  <% if @game.prompt_selection? %>
+    <%= render "dice_result", dice_result: @game.dice_result, game: @game %>
+    <% else %>
+    <div id="<%= dom_id(@game, :dice_result) %>"></div>
+  <% end %>
+  <%= f.submit "お題を確認する" %>
+<% end %>

@@ -47,4 +47,8 @@ class Cache::Room < CacheModel
   def room_channel
     "room_#{id}"
   end
+
+  def dice_channel
+    "#{room_channel}_dice"
+  end
 end
