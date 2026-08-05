@@ -56,6 +56,8 @@ class FirstPagesController < ApplicationController
     )
     if first_page.save
       redirect_to sketch_book_first_page_path(@sketch_book, first_page), notice: "お題が決まりました"
+    elsif (existing_page = @sketch_book.pages.find_by(page_number: 1))
+      redirect_to sketch_book_first_page_path(@sketch_book, existing_page)
     else
       flash.now[:alert] = "お題ページの作成に失敗しました"
       # new template parameters
