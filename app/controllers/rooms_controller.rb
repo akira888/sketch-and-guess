@@ -45,9 +45,7 @@ class RoomsController < ApplicationController
         redirect_to sketch_book_path(user.current_sketch_book_id)
       end
     elsif @game&.prompt_selection?
-      # お題選択フェーズの場合、お題選択画面にリダイレクト
-      redirect_to prompt_selection_room_path(@cache_room.id)
-      # else はユーザー参加待ち状態となる
+      # else はゲーム開始前の待機画面となる
     end
   end
 
@@ -142,120 +140,6 @@ class RoomsController < ApplicationController
       }
     else
       render json: { error: "No sketch book found" }, status: :not_found
-    end
-  end
-
-  def prompt_selection
-    @cache_room = Cache::Room.find(params[:id])
-    @game = Cache::Game.find_by_room(@cache_room.id)
-    @current_user = Cache::User.find(session[:user_id])
-
-    unless @current_user
-      flash[:alert] = "ユーザー情報が見つかりません"
-      redirect_to root_path and return
-    end
-
-    unless @game&.prompt_selection?
-      flash[:alert] = "お題選択フェーズではありません"
-      redirect_to room_path(@cache_room.id) and return
-    end
-
-    # 現在のユーザーに割り当てられたcard_numの6つのお題を取得
-    if @current_user.assigned_card_num
-      @prompts = Prompt.by_card(@current_user.assigned_card_num).order(:order)
-    else
-      flash[:alert] = "お題が割り当てられていません"
-      redirect_to room_path(@cache_room.id) and return
-    end
-
-    # ルーム作成者を判定（最初のメンバー）
-    first_member = @cache_room.members.first
-    @is_room_creator = first_member && first_member["user_id"] == @current_user.id
-  end
-
-  def submit_free_prompt
-    @cache_room = Cache::Room.find(params[:id])
-    @game = Cache::Game.find_by_room(@cache_room.id)
-    @current_user = Cache::User.find(session[:user_id])
-
-    unless @game
-      render json: { error: "ゲームが見つかりません" }, status: :bad_request and return
-    end
-
-    unless @game.dice_result.present?
-      render json: { error: "まだダイスが振られていません" }, status: :bad_request and return
-    end
-
-    prompt_text = params[:prompt_text]&.strip
-    if prompt_text.blank?
-      render json: { error: "お題を入力してください" }, status: :bad_request and return
-    end
-
-    begin
-      # 現在のユーザーのスケッチブックを取得
-      sketch_book_id = @current_user.sketch_book_id
-      unless sketch_book_id
-        render json: { error: "スケッチブックが見つかりません" }, status: :not_found and return
-      end
-
-      sketch_book = SketchBook.find(sketch_book_id)
-
-      # スケッチブックのprompt_textを更新
-      sketch_book.update!(prompt_text: prompt_text)
-
-      # 1ページ目（お題ページ）のcontentも更新
-      first_page = sketch_book.pages.find_by(page_number: 1)
-      if first_page
-        first_page.update!(content: prompt_text)
-      end
-
-      Rails.logger.info "Updated FREE prompt for user #{@current_user.name}: #{prompt_text}"
-
-      render json: {
-        success: true,
-        message: "お題が設定されました",
-        prompt_text: prompt_text
-      }
-    rescue => e
-      Rails.logger.error "Failed to submit free prompt: #{e.message}"
-      render json: { error: e.message }, status: :internal_server_error
-    end
-  end
-
-  def roll_dice
-    @cache_room = Cache::Room.find(params[:id])
-    @game = Cache::Game.find_by_room(@cache_room.id)
-    @current_user = Cache::User.find(session[:user_id])
-
-    unless @game&.prompt_selection?
-      render json: { error: "お題選択フェーズではありません" }, status: :bad_request and return
-    end
-
-    # ダイスボタンの二重クリック防止
-    if @game.dice_result.present?
-      render json: { error: "既にダイスが振られています" }, status: :bad_request and return
-    end
-
-    begin
-      # ダイスを振る（1-6）
-      dice_result = rand(1..6)
-      Rails.logger.info "Dice rolled: #{dice_result} for room #{@cache_room.id}"
-
-      # ゲームを開始（全員分のスケッチブック作成）
-      game_manager = GameManager.new(@cache_room)
-      game_manager.finalize_game_start!(dice_result)
-
-      # 全員にダイス結果とゲーム開始をブロードキャスト
-      broadcast_dice_result(@cache_room, dice_result)
-
-      render json: {
-        success: true,
-        dice_result: dice_result,
-        message: "ダイスを振りました"
-      }
-    rescue => e
-      Rails.logger.error "Failed to roll dice: #{e.message}"
-      render json: { error: e.message }, status: :internal_server_error
     end
   end
 
