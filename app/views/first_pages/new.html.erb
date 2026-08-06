@@ -10,10 +10,10 @@
     <% end %>
   <% end %>
   <% if @current_user.can_redraw? %>
-    <%= button_to "カードを引き直す(3回まで)", redraw_card_user_path(@current_user), method: :patch %>
+    <%= button_to "カードを引き直す(3回まで)", redraw_card_user_path(@current_user), method: :patch, class: "btn btn--secondary" %>
   <% end %>
   <% unless @current_user.card_decided? %>
-    <%= button_to "これでOK", decide_card_user_path(@current_user), method: :patch %>
+    <%= button_to "これでOK", decide_card_user_path(@current_user), method: :patch, class: "btn btn--primary" %>
   <% end %>
 </div>
 <%= form_with url: sketch_book_first_pages_url(@sketch_book), id: "create_first_page", data: {submitted: 0} do |f| %>
@@ -22,5 +22,5 @@
     <% else %>
     <div id="<%= dom_id(@game, :dice_result) %>"></div>
   <% end %>
-  <%= f.submit "お題を確認する" %>
+  <%= f.submit "お題を確認する", class: "btn btn--primary" %>
 <% end %>

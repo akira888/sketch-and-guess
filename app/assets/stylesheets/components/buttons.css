@@ -1,0 +1,65 @@
+/*
+ * ボタン共通スタイル（外部CSS化の第1号）
+ *
+ * 世界観: クレヨンで描いた紙の工作。紙に貼ったステッカーのようなボタン。
+ * 太いインク縁 + ぼかさないベタ落ち影、押すと沈む。
+ *
+ * 役割は2つだけ:
+ *   .btn--primary   進む操作（コーラル塗り）
+ *   .btn--secondary やり直す操作（紙色）
+ */
+
+.btn {
+  display: inline-block;
+  padding: 10px 24px;
+  font-family: "Comic Sans MS", "Chalkboard SE", cursive, sans-serif;
+  font-size: 18px;
+  line-height: 1.2;
+  color: #2C1810;
+  border: 3px solid #2C1810;
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 #2C1810; /* ぼかさない影 = 工作感 */
+  cursor: pointer;
+  transition: transform 0.08s ease-out, box-shadow 0.08s ease-out;
+}
+
+.btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 #2C1810;
+}
+
+.btn:active {
+  /* 押すと沈む */
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 #2C1810;
+}
+
+.btn:focus-visible {
+  outline: 3px dashed #FF6B6B;
+  outline-offset: 3px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  box-shadow: none;
+  transform: none;
+  cursor: not-allowed;
+}
+
+.btn--primary {
+  background: #FF6B6B;
+  color: #FFF9E6;
+}
+
+.btn--secondary {
+  background: #FFF9E6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .btn:hover,
+  .btn:active {
+    transition: none;
+    transform: none;
+  }
+}
