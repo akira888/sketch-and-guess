@@ -18,3 +18,19 @@ card3_order1:
   card_num: 3
   order: 1
   word: パセリ
+
+# FREE 除外テスト用: word が FREE / FREE:ジャンル のお題を含むカード
+card4_order1_free:
+  card_num: 4
+  order: 1
+  word: FREE
+
+card5_order1_free_genre:
+  card_num: 5
+  order: 1
+  word: "FREE:動物"
+
+card5_order2:
+  card_num: 5
+  order: 2
+  word: リス

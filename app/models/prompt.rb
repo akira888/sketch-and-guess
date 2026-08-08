@@ -16,6 +16,14 @@ class Prompt < ApplicationRecord
     find_by(card_num: card_num, order: order)
   end
 
+  def self.all_cards
+    all.distinct.pluck(:card_num)
+  end
+
+  def self.has_free_prompt_cards
+    where("word LIKE ?", 'FREE%').distinct.pluck(:card_num)
+  end
+
   # Instance methods
   def free_input?
     word == "FREE" || word.start_with?("FREE:") || word.start_with?("FREE_CHOICE:")

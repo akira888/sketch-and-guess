@@ -157,8 +157,7 @@ class Cache::Game < CacheModel
   end
 
   def pick_prompt_card
-    available_card_nums = Prompt.distinct.pluck(:card_num) - picked_cards
-    picked_card_num = available_card_nums.sample.to_i
+    picked_card_num = available_card_nums(including_free_cards: false).sample.to_i
     self.picked_cards.push picked_card_num
 
     picked_card_num
@@ -184,5 +183,11 @@ class Cache::Game < CacheModel
 
   def params_normalization
     self.picked_cards_json = picked_cards.to_json
+  end
+
+  def available_card_nums(including_free_cards: true)
+    cards = Prompt.all_cards
+    cards -= Prompt.has_free_prompt_cards unless including_free_cards
+    cards - picked_cards
   end
 end

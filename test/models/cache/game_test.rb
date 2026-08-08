@@ -34,6 +34,30 @@ class Cache::GameTest < ActiveSupport::TestCase
     assert_equal 4, Cache::Game.find_by_room(game.room_id).dice_result
   end
 
+  # ---- pick_prompt_card: FREE 除外 ----
+  # FREE（自由入力）は未実装のため、FREE お題を含むカードは配布対象から外す。
+  # fixture: card 1,2,3 = 通常 / card 4 = FREE のみ / card 5 = FREE:ジャンル + 通常お題
+
+  test "pick_prompt_card は通常カードを重複なく配る" do
+    game = create_game(status: "waiting")
+
+    picked = 3.times.map { game.pick_prompt_card }
+
+    assert_equal [ 1, 2, 3 ], picked.sort
+  end
+
+  test "pick_prompt_card は FREE お題を含むカードを配らない" do
+    game = create_game(status: "waiting")
+
+    # 引き切っても FREE 入りカードは現れない（バグがあれば5枚全部が picked に入る）
+    5.times { game.pick_prompt_card }
+    game.save!
+
+    reloaded = Cache::Game.find_by_room(game.room_id)
+    assert_not_includes reloaded.picked_cards, 4, "word=FREE のカードが配られた"
+    assert_not_includes reloaded.picked_cards, 5, "FREE:ジャンル を含むカードが配られた"
+  end
+
   private
 
   def create_game(**attrs)
