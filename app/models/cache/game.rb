@@ -117,32 +117,23 @@ class Cache::Game < CacheModel
     save!
   end
 
-  # Get current holder of a sketch book
-  def current_holder(sketch_book_id)
-    holders_hash[sketch_book_id.to_s]
-  end
-
-  # Set current holder of a sketch book
-  def set_holder(sketch_book_id, user_name)
-    hash = holders_hash
-    hash[sketch_book_id.to_s] = user_name
-    self.holders_hash = hash
-    save!
-  end
-
-  # Rotate sketch books to next holders
-  def rotate_sketch_books!(member_order)
-    hash = holders_hash
-    new_hash = {}
-
-    hash.each do |sketch_book_id, current_holder|
-      current_index = member_order.index(current_holder)
-      next_index = (current_index + 1) % member_order.length
-      new_hash[sketch_book_id] = member_order[next_index]
+  def distribute_sketch_books!(members)
+    sketch_book_ids = members.map(&:sketch_book_id)
+    member_ids = members.map(&:id)
+    if members.size.odd?
+      first = member_ids.shift
+      member_ids.push(first)
     end
 
-    self.holders_hash = new_hash
+    self.holders_hash = sketch_book_ids.zip(member_ids).to_h
     save!
+  end
+
+  def sketch_book_id_held_by(user_id)
+    member_ids = Cache::Room.find(room_id).member_ids
+    index_by_turn = current_turn - 1
+    offset = (member_ids.find_index(user_id) - index_by_turn) % member_ids.size
+    holders_hash.key(member_ids[offset])&.to_i
   end
 
   # Check if all sketch books have returned to original owners
