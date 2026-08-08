@@ -17,6 +17,31 @@ class GameFacilitatorTest < ActiveSupport::TestCase
     assert Cache::Game.find_by_room(game.room_id).in_progress?
   end
 
+  # ゲームスタート時はターン状態も整合させる。
+  # ターン番号の規約: 0 = お題ページ、1 = 最初の絵（ゼロ起点）
+  test "proceed! は prompt_selection → in_progress でターン状態をスタート位置にする" do
+    game = create_game(status: "prompt_selection")
+
+    game.facilitator.proceed!
+
+    reloaded = Cache::Game.find_by_room(game.room_id)
+    assert_equal 1, reloaded.current_turn, "スタート時は最初の絵ターン（1）"
+    assert reloaded.sketch_turn?, "最初のターンは絵を描く"
+  end
+
+  test "proceed! は prompt_selection 以外の遷移ではターン状態を変えない" do
+    game = create_game(status: "in_progress")
+    game.current_turn = 3
+    game.turn_type = "text"
+    game.save!
+
+    game.facilitator.proceed! # -> round_finished
+
+    reloaded = Cache::Game.find_by_room(game.room_id)
+    assert_equal 3, reloaded.current_turn
+    assert reloaded.text_turn?
+  end
+
   test "proceed! は in_progress → round_finished に進める" do
     game = create_game(status: "in_progress")
 

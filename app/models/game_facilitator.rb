@@ -8,6 +8,7 @@ class GameFacilitator
       when "waiting"
         "prompt_selection"
       when "prompt_selection"
+        proceed_turn
         "in_progress"
       when "in_progress"
         "round_finished"
@@ -18,5 +19,15 @@ class GameFacilitator
     end
 
     @game.save!
+  end
+
+  def proceed_turn
+    @game.current_turn += 1
+    @game.turn_type = case @game.turn_type
+      when "prompt", "text"
+        "sketch"
+      else
+        "text"
+    end
   end
 end
