@@ -23,19 +23,6 @@ class Page < ApplicationRecord
   scope :ordered, -> { order(:page_number) }
   scope :by_type, ->(type) { where(page_type: type) }
 
-  # Instance methods
-  def sketch?
-    page_type == "sketch"
-  end
-
-  def text?
-    page_type == "text"
-  end
-
-  def prompt?
-    page_type == "prompt"
-  end
-
   private
 
   def content_or_image_present
