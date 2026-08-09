@@ -72,6 +72,7 @@ class FirstPagesController < ApplicationController
     if @game.prompt_selection? && all_user_has_first_page?(@room.members)
       @game.distribute_sketch_books!(@room.members)
       @game.facilitator.proceed!
+      broadcast_next_page
     end
   end
 
@@ -94,6 +95,17 @@ class FirstPagesController < ApplicationController
       locals: { dice_result: dice_result, game: @game }
     )
   end
+
+  def broadcast_next_page
+    Turbo::StreamsChannel.broadcast_update_to(
+      @room.start_channel,
+      target: helpers.dom_id(@game, :next_page),
+      method: "morph",
+      partial: "first_pages/next_page",
+      locals: { room: @room, game: @game }
+    )
+  end
+
   def all_user_has_first_page?(members)
     first_page_count = Page.where(sketch_book_id: members.map(&:sketch_book_id)).where(page_number: 1).count
     members.size == first_page_count

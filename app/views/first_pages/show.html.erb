@@ -1,3 +1,16 @@
-first page show !
+<%= turbo_stream_from @room.start_channel %>
 
-<%= @page.content %>
+<h3>
+  お題：<%= @page.content %>
+</h3>
+<p>
+  こちらに決まりました！
+</p>
+<%= form_with url: next_page_room_url(@room), id: "resolve_page", method: "get", data: {submitted: 0} do |f| %>
+  <% if @game.in_progress? %>
+    <%= render "next_page", room: @room, game: @game %>
+    <% else %>
+    <div id="<%= dom_id(@game, :next_page) %>">全員のお題が揃うのを待っています…</div>
+  <% end %>
+  <%= f.submit "ゲーム開始", class: "btn btn--primary auto-submit" %>
+<% end %>
