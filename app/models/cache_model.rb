@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # Base class for models stored in SolidCache
-# Provides ActiveModel-like interface with validations
+# Provides ActiveModel-like interface with validations and callbacks
 #
 # Example:
 #   class UserSession < CacheModel
@@ -12,6 +12,10 @@
 #     validates :user_id, presence: true
 #     validates :token, presence: true
 #
+#     before_save :set_expires_at
+#     after_save :notify_creation
+#     before_destroy :cleanup_resources
+#
 #     def self.cache_key_prefix
 #       "user_session"
 #     end
@@ -19,16 +23,34 @@
 #     def self.default_ttl
 #       1.hour
 #     end
+#
+#     private
+#
+#     def set_expires_at
+#       self.expires_at ||= 1.hour.from_now
+#     end
+#
+#     def notify_creation
+#       # Notify other services
+#     end
+#
+#     def cleanup_resources
+#       # Cleanup before deletion
+#     end
 #   end
 #
 #   session = UserSession.new(user_id: 1, token: "abc123")
-#   session.save  # => true
+#   session.save  # => true (triggers before_save and after_save callbacks)
 #   UserSession.find("user_session:1")  # => UserSession instance
 class CacheModel
   include ActiveModel::Model
   include ActiveModel::Attributes
   include ActiveModel::Validations
   include ActiveModel::Serialization
+  include ActiveModel::Callbacks
+  include Turbo::Broadcastable
+
+  define_model_callbacks :save, :destroy
 
   # Primary key for cache storage
   attribute :id, :string
@@ -112,13 +134,15 @@ class CacheModel
   def save(validate: true)
     return false if validate && invalid?
 
-    generate_id if id.blank?
+    run_callbacks :save do
+      generate_id if id.blank?
 
-    Rails.cache.write(
-      cache_key,
-      serializable_hash,
-      expires_in: self.class.default_ttl
-    )
+      Rails.cache.write(
+        cache_key,
+        serializable_hash,
+        expires_in: self.class.default_ttl
+      )
+    end
   end
 
   # Save the record to cache, raises RecordInvalid if invalid
@@ -150,7 +174,10 @@ class CacheModel
   # @return [Boolean] true if deleted
   def destroy
     return false if id.blank?
-    self.class.destroy(id)
+
+    run_callbacks :destroy do
+      self.class.destroy(id)
+    end
   end
 
   # Reload the record from cache

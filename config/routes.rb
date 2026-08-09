@@ -10,17 +10,21 @@ Rails.application.routes.draw do
 
   resources :rooms, only: [ :index, :new, :create, :show ] do
     get :results, on: :member
-    get :game_redirect, on: :member
-    get :game_next_turn, on: :member
-    get :prompt_selection, on: :member
-    post :roll_dice, on: :member
-    post :submit_free_prompt, on: :member
+    get :next_page, on: :member
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
-  resources :users, only: [ :create, :show ]
 
-  resources :sketch_books, only: [ :index, :show ] do
+  resources :users, only: [ :new, :create, :show ] do
+    member do
+      patch :decide_card
+      patch :redraw_card
+    end
+  end
+
+  resources :sketch_books, only: [ :new, :index, :show ] do
     post :add_page, on: :member
+    resource :first_page, only: [ :new, :create, :show ]
+    resources :pages, only: [ :new ]
   end
 end

@@ -5,7 +5,7 @@
     <div class="form-group">
       <%= form.label :member_limit, '何人で遊びますか？', class: 'form-label' %>
       <div class="range-container">
-        <%= form.range_field :member_limit, in: 4..8, oninput: "this.form.member_limit_result.value = this.value", class: 'range-slider' %>
+        <%= form.range_field :member_limit, in: @member_limit_range, oninput: "this.form.member_limit_result.value = this.value", class: 'range-slider' %>
         <div class="range-output">
           <output name="member_limit_result" for="cache_room_member_limit"><%= @cache_room.member_limit %></output>
           <span class="unit">人</span>

@@ -1,20 +1,23 @@
 class Cache::Game < CacheModel
+  before_save :params_normalization
+
   # Attributes
   attribute :room_id, :string
-  attribute :current_turn, :integer, default: 1
-  attribute :turn_type, :string, default: "sketch"
+  attribute :current_turn, :integer, default: 0
+  attribute :turn_type, :string, default: "prompt"
   attribute :turn_started_at, :datetime
   attribute :current_round, :integer, default: 1
   attribute :status, :string, default: "waiting"
   attribute :sketch_book_holders, :string # JSON string for current holders
   attribute :dice_result, :integer # ダイスの出目（1-6）
+  attribute :picked_cards_json, :string, default: [].to_json
 
   # Validations
   validates :room_id, presence: true
-  validates :current_turn, numericality: { greater_than: 0 }
-  validates :current_round, numericality: { greater_than: 0 }
+  validates :current_turn, numericality: { greater_than_or_equal_to: 0 }
+  validates :current_round, numericality: { greater_than_or_equal_to: 1 }
   validates :status, inclusion: { in: %w[waiting prompt_selection in_progress round_finished finished] }
-  validates :turn_type, inclusion: { in: %w[sketch text] }
+  validates :turn_type, inclusion: { in: %w[sketch text prompt] }
   validates :dice_result, numericality: { greater_than_or_equal_to: 1, less_than_or_equal_to: 6 }, allow_nil: true
 
   # Configuration
@@ -42,6 +45,10 @@ class Cache::Game < CacheModel
   # Set sketch_book_holders from hash
   def holders_hash=(hash)
     self.sketch_book_holders = hash.to_json
+  end
+
+  def facilitator
+    @facilitator ||= GameFacilitator.new(self)
   end
 
   # Status checks
@@ -110,32 +117,23 @@ class Cache::Game < CacheModel
     save!
   end
 
-  # Get current holder of a sketch book
-  def current_holder(sketch_book_id)
-    holders_hash[sketch_book_id.to_s]
-  end
-
-  # Set current holder of a sketch book
-  def set_holder(sketch_book_id, user_name)
-    hash = holders_hash
-    hash[sketch_book_id.to_s] = user_name
-    self.holders_hash = hash
-    save!
-  end
-
-  # Rotate sketch books to next holders
-  def rotate_sketch_books!(member_order)
-    hash = holders_hash
-    new_hash = {}
-
-    hash.each do |sketch_book_id, current_holder|
-      current_index = member_order.index(current_holder)
-      next_index = (current_index + 1) % member_order.length
-      new_hash[sketch_book_id] = member_order[next_index]
+  def distribute_sketch_books!(members)
+    sketch_book_ids = members.map(&:sketch_book_id)
+    member_ids = members.map(&:id)
+    if members.size.odd?
+      first = member_ids.shift
+      member_ids.push(first)
     end
 
-    self.holders_hash = new_hash
+    self.holders_hash = sketch_book_ids.zip(member_ids).to_h
     save!
+  end
+
+  def sketch_book_id_held_by(user_id)
+    member_ids = Cache::Room.find(room_id).member_ids
+    index_by_turn = current_turn - 1
+    offset = (member_ids.find_index(user_id) - index_by_turn) % member_ids.size
+    holders_hash.key(member_ids[offset])&.to_i
   end
 
   # Check if all sketch books have returned to original owners
@@ -145,10 +143,42 @@ class Cache::Game < CacheModel
     end
   end
 
+  def picked_cards
+    @dealt_cards ||= JSON.parse picked_cards_json
+  end
+
+  def pick_prompt_card
+    picked_card_num = available_card_nums(including_free_cards: false).sample.to_i
+    self.picked_cards.push picked_card_num
+
+    picked_card_num
+  end
+
+  def roll_dice
+    return false unless prompt_selection?
+    return false if dice_result.present?
+
+    # ダイスを振る（1-6）
+    self.dice_result = rand(1..6)
+    Rails.logger.info "Dice rolled: #{dice_result} for room #{room_id}"
+
+    save
+  end
+
   private
 
   # Custom ID generation: use room_id as ID
   def generate_id
     self.id = room_id
+  end
+
+  def params_normalization
+    self.picked_cards_json = picked_cards.to_json
+  end
+
+  def available_card_nums(including_free_cards: true)
+    cards = Prompt.all_cards
+    cards -= Prompt.has_free_prompt_cards unless including_free_cards
+    cards - picked_cards
   end
 end
