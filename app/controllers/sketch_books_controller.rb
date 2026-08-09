@@ -67,16 +67,6 @@ class SketchBooksController < ApplicationController
 
   private
 
-  def set_current_user
-    user_id = session[:user_id]
-    @current_user = Cache::User.find(user_id)
-
-    unless @current_user
-      flash[:alert] = "ユーザー情報が見つかりません"
-      redirect_to root_path
-    end
-  end
-
   def set_sketch_book
     @sketch_book = SketchBook.find(params[:id])
   rescue ActiveRecord::RecordNotFound
@@ -293,8 +283,8 @@ class SketchBooksController < ApplicationController
     Rails.logger.info "=== update_current_sketch_books ==="
 
     # 各ユーザーのcurrent_sketch_book_idを更新
-    room.member_order_array.each do |member|
-      user = Cache::User.find(member["user_id"])
+    room.members.each do |member|
+      user = Cache::User.find(member["id"])
       next unless user
 
       # このユーザーが現在持っているスケッチブックを探す

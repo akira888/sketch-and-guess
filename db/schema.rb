@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_10_23_200826) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_18_142057) do
   create_table "active_storage_attachments", force: :cascade do |t|
     t.bigint "blob_id", null: false
     t.datetime "created_at", null: false
@@ -64,7 +64,7 @@ ActiveRecord::Schema[8.1].define(version: 2025_10_23_200826) do
     t.boolean "completed", default: false, null: false
     t.datetime "created_at", null: false
     t.string "owner_name", null: false
-    t.integer "prompt_id", null: false
+    t.integer "prompt_id"
     t.text "prompt_text"
     t.string "room_id", null: false
     t.integer "round", default: 1, null: false

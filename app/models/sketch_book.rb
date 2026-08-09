@@ -1,6 +1,6 @@
 class SketchBook < ApplicationRecord
   # Associations
-  belongs_to :prompt
+  belongs_to :prompt, optional: true
   has_many :pages, dependent: :destroy
 
   # Validations
@@ -22,11 +22,5 @@ class SketchBook < ApplicationRecord
   def expected_page_count(player_count)
     # 1ページ目（お題） + プレイヤー数分のターン
     player_count + 1
-  end
-
-  def completed?
-    # completedフラグで判定
-    # または、ページ数で判定することも可能
-    completed
   end
 end
