@@ -5,16 +5,16 @@ class GameFacilitator
 
   def proceed!
     @game.status = case @game.status
-      when "waiting"
+    when "waiting"
         "prompt_selection"
-      when "prompt_selection"
+    when "prompt_selection"
         proceed_turn
         "in_progress"
-      when "in_progress"
+    when "in_progress"
         "round_finished"
-      when "round_finished"
+    when "round_finished"
         "finished"
-      else
+    else
         raise NameError, "ゲームステータスが不明です"
     end
 
@@ -24,9 +24,9 @@ class GameFacilitator
   def proceed_turn
     @game.current_turn += 1
     @game.turn_type = case @game.turn_type
-      when "prompt", "text"
+    when "prompt", "text"
         "sketch"
-      else
+    else
         "text"
     end
   end

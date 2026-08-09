@@ -21,7 +21,7 @@ class Prompt < ApplicationRecord
   end
 
   def self.has_free_prompt_cards
-    where("word LIKE ?", 'FREE%').distinct.pluck(:card_num)
+    where("word LIKE ?", "FREE%").distinct.pluck(:card_num)
   end
 
   # Instance methods
