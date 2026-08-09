@@ -3,7 +3,6 @@ class Cache::User < CacheModel
   attribute :name, :string
   attribute :room_id, :string
   attribute :sketch_book_id, :integer # 自分のスケッチブックID（永続化されたSketchBook）
-  attribute :current_sketch_book_id, :integer # 現在持っているスケッチブックID（オプション）
   attribute :assigned_card_num, :integer # お題カード番号
   attribute :assigned_count, :integer
   attribute :card_decided, :boolean
@@ -28,17 +27,6 @@ class Cache::User < CacheModel
   def can_redraw?
     return false if card_decided?
     assigned_count <= 3
-  end
-
-  # Check if user is holding their own sketch book
-  def holding_own_book?
-    sketch_book_id.present? && sketch_book_id == current_sketch_book_id
-  end
-
-  # Get the sketch book the user is currently holding
-  def current_sketch_book
-    return nil unless current_sketch_book_id.present?
-    SketchBook.find_by(id: current_sketch_book_id)
   end
 
   # Get the user's own sketch book
