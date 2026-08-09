@@ -67,6 +67,12 @@ class FirstPagesController < ApplicationController
 
   def show
     @page = @sketch_book.pages.find_by!(page_number: 1)
+    @room = Cache::Room.find(@current_user.room_id)
+    @game = Cache::Game.find_by_room(@room.id)
+    if @game.prompt_selection? && all_user_has_first_page?(@room.members)
+      @game.distribute_sketch_books!(@room.members)
+      @game.facilitator.proceed!
+    end
   end
 
   private
@@ -87,5 +93,9 @@ class FirstPagesController < ApplicationController
       partial: "first_pages/dice_result",
       locals: { dice_result: dice_result, game: @game }
     )
+  end
+  def all_user_has_first_page?(members)
+    first_page_count = Page.where(sketch_book_id: members.map(&:sketch_book_id)).where(page_number: 1).count
+    members.size == first_page_count
   end
 end

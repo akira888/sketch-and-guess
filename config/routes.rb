@@ -10,8 +10,7 @@ Rails.application.routes.draw do
 
   resources :rooms, only: [ :index, :new, :create, :show ] do
     get :results, on: :member
-    get :game_redirect, on: :member
-    get :game_next_turn, on: :member
+    get :next_page, on: :member
   end
 
   get "entry/:room_id", to: "users#new", as: "user_entry"
@@ -25,7 +24,7 @@ Rails.application.routes.draw do
 
   resources :sketch_books, only: [ :new, :index, :show ] do
     post :add_page, on: :member
-    resources :first_pages, only: [ :new, :create, :show ]
     resource :first_page, only: [ :new, :create, :show ]
+    resources :pages, only: [ :new ]
   end
 end

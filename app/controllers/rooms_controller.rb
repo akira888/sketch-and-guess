@@ -49,6 +49,19 @@ class RoomsController < ApplicationController
     end
   end
 
+  def next_page
+    set_current_user
+    game = Cache::Game.find_by_room(@current_user.room_id)
+    resolve_id = game.sketch_book_id_held_by(@current_user.id)
+    if resolve_id
+      redirect_to new_sketch_book_page_path(resolve_id)
+    else
+      flash[:alert] = "スケッチブックの割り出しに失敗"
+      redirect_to sketch_book_first_page_path(@current_user.sketch_book_id)
+    end
+  end
+
+  # legacy
   def results
     @cache_room = Cache::Room.find(params[:id])
     @game = Cache::Game.find_by_room(@cache_room.id)
@@ -75,71 +88,6 @@ class RoomsController < ApplicationController
         user.save
         Rails.logger.info "Cleared game data for user #{user.name} after viewing results"
       end
-    end
-  end
-
-  def game_redirect
-    room_id = params[:id]
-    game = Cache::Game.find_by_room(room_id)
-    user_id = session[:user_id]
-    user = Cache::User.find(user_id)
-
-    response_data = {}
-
-    # ゲームステータスを追加
-    if game
-      response_data[:game_status] = game.status
-      # ダイス結果も追加（お題選択後の表示用）
-      response_data[:dice_result] = game.dice_result if game.dice_result
-
-      # ゲーム進行中の場合、全員の準備ができているかチェック
-      if game.in_progress?
-        # FREEお題がまだ入力されていないスケッチブックがあるかチェック
-        pending_free_prompts = SketchBook.where(room_id: room_id)
-                                         .where("prompt_text = ? OR prompt_text LIKE ? OR prompt_text LIKE ?",
-                                                "FREE", "FREE:%", "FREE_CHOICE:%")
-                                         .exists?
-        response_data[:all_ready] = !pending_free_prompts
-      end
-    end
-
-    # お題選択フェーズの場合
-    if game&.prompt_selection?
-      response_data[:prompt_selection] = true
-      render json: response_data
-      return
-    end
-
-    # ゲーム進行中の場合、スケッチブックURLを返す
-    if user&.current_sketch_book_id
-      response_data[:sketch_book_id] = user.current_sketch_book_id
-      response_data[:sketch_book_url] = sketch_book_path(user.current_sketch_book_id)
-      render json: response_data
-    else
-      render json: response_data.merge(error: "No sketch book found"), status: :not_found
-    end
-  end
-
-  def game_next_turn
-    room_id = params[:id]
-    game = Cache::Game.find_by_room(room_id)
-    user_id = session[:user_id]
-    user = Cache::User.find(user_id)
-
-    # ゲームが終了している場合は結果画面へ
-    if game&.finished? || game&.round_finished?
-      render json: {
-        game_finished: true,
-        results_url: results_room_path(room_id)
-      }
-    elsif user&.current_sketch_book_id
-      render json: {
-        game_finished: false,
-        sketch_book_id: user.current_sketch_book_id,
-        sketch_book_url: sketch_book_path(user.current_sketch_book_id)
-      }
-    else
-      render json: { error: "No sketch book found" }, status: :not_found
     end
   end
 
