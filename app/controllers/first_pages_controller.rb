@@ -107,7 +107,7 @@ class FirstPagesController < ApplicationController
   end
 
   def all_user_has_first_page?(members)
-    first_page_count = Page.where(sketch_book_id: members.map(&:sketch_book_id)).where(page_number: 1).count
+    first_page_count = Page.where(sketch_book_id: members.map(&:sketch_book_id)).by_type(:prompt).count
     members.size == first_page_count
   end
 end

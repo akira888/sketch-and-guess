@@ -25,6 +25,7 @@ class Page < ApplicationRecord
 
   private
 
+  # validation
   def content_or_image_present
     if sketch?
       errors.add(:image, "must be attached for sketch pages") unless image.attached?
