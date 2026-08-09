@@ -1,8 +1,12 @@
 <h2>ゲーム内で利用するユーザー名を登録して下さい。</h2>
 <%= form_with model: @cache_user, url: users_path do |form| %>
-  <%= form.label :name, 'ユーザー名' %>
-  <%= form.text_field :name %>
-  <%= form.hidden_field :room_id %>
+  <div class="form-group">
+    <%= form.label :name, 'ユーザー名', class: 'form-label' %>
+    <%= form.text_field :name %>
+  </div>
 
-  <%= form.submit 'この名前にする！' %>
+  <%= form.hidden_field :room_id %>
+  <div class="form-actions">
+    <%= form.submit '名前を決定', class: 'submit-btn' %>
+  </div>
 <% end %>

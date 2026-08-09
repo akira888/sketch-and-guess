@@ -1,0 +1,26 @@
+<%= turbo_stream_from @room.dice_channel %>
+
+<div class="card">
+  <p>
+    あなたのお題カードはこちら
+  </p>
+  <%= tag.ul class: "prompts" do %>
+    <% @card.prompts.pluck(:word).each do |word| %>
+      <%= tag.li word %>
+    <% end %>
+  <% end %>
+  <% if @current_user.can_redraw? %>
+    <%= button_to "カードを引き直す(3回まで)", redraw_card_user_path(@current_user), method: :patch, class: "btn btn--secondary" %>
+  <% end %>
+  <% unless @current_user.card_decided? %>
+    <%= button_to "これでOK", decide_card_user_path(@current_user), method: :patch, class: "btn btn--primary" %>
+  <% end %>
+</div>
+<%= form_with url: sketch_book_first_page_url(@sketch_book), id: "create_first_page", data: {submitted: 0} do |f| %>
+  <% if @game.prompt_selection? %>
+    <%= render "dice_result", dice_result: @game.dice_result, game: @game %>
+    <% else %>
+    <div id="<%= dom_id(@game, :dice_result) %>"></div>
+  <% end %>
+  <%= f.submit "お題をスケッチブックに書き込む", class: "btn btn--primary auto-submit" %>
+<% end %>

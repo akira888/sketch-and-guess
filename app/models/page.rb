@@ -1,6 +1,6 @@
 class Page < ApplicationRecord
   # Associations
-  belongs_to :sketch_book
+  belongs_to :sketch_book, inverse_of: :pages
   has_one_attached :image
 
   # Enums
@@ -23,21 +23,9 @@ class Page < ApplicationRecord
   scope :ordered, -> { order(:page_number) }
   scope :by_type, ->(type) { where(page_type: type) }
 
-  # Instance methods
-  def sketch?
-    page_type == "sketch"
-  end
-
-  def text?
-    page_type == "text"
-  end
-
-  def prompt?
-    page_type == "prompt"
-  end
-
   private
 
+  # validation
   def content_or_image_present
     if sketch?
       errors.add(:image, "must be attached for sketch pages") unless image.attached?
