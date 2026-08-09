@@ -34,8 +34,8 @@ class FirstPagesController < ApplicationController
     # 必要な情報は各モデルから取り出す
 
     # first page が登録済みの場合はshowへ移動
-    if (persisted_first_page = @sketch_book.pages.find_by(page_number: 1))
-      return redirect_to sketch_book_first_page_path(@sketch_book, persisted_first_page)
+    if @sketch_book.pages.find_by(page_number: 1)
+      return redirect_to sketch_book_first_page_path(@sketch_book)
     end
 
     @game = Cache::Game.find_by_room(@current_user.room_id)
@@ -54,10 +54,8 @@ class FirstPagesController < ApplicationController
       user_name: @current_user.name,
       content: prompt.word
     )
-    if first_page.save
-      redirect_to sketch_book_first_page_path(@sketch_book, first_page), notice: "お題が決まりました"
-    elsif (existing_page = @sketch_book.pages.find_by(page_number: 1))
-      redirect_to sketch_book_first_page_path(@sketch_book, existing_page)
+    if first_page.save || @sketch_book.pages.find_by(page_number: 1)
+      redirect_to sketch_book_first_page_path(@sketch_book), notice: "お題を確認しましょう"
     else
       flash.now[:alert] = "お題ページの作成に失敗しました"
       # new template parameters
@@ -68,7 +66,7 @@ class FirstPagesController < ApplicationController
   end
 
   def show
-    @page = @sketch_book.pages.find(params[:id])
+    @page = @sketch_book.pages.find_by!(page_number: 1)
   end
 
   private
